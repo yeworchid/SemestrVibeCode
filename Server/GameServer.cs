@@ -1,9 +1,8 @@
 using Common;
 using Common.DTO;
+using Common.Services;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Text.Json;
 
 namespace Server;
 
@@ -11,24 +10,33 @@ public class GameServer
 {
     private TcpListener listener = null!;
     private List<Player> players = new List<Player>();
-    private int nextPlayerId = 1;
+    private int nextId = 1;
     private bool gameStarted = false;
-    private int currentCycle = 0;
-    private int currentTurnIndex = 0;
+    private int cycle = 0;
+    private int turnIdx = 0;
     private List<int> turnOrder = new List<int>();
     private int totalCycles = 15;
-    private int currentTurn = 0;
+    private int globalTurn = 0;
+    private Random rnd = new Random();
+
+    public void ForceStart()
+    {
+        if (!gameStarted && players.Count >= 2)
+        {
+            StartGame();
+        }
+    }
 
     public void Start(int port)
     {
         listener = new TcpListener(IPAddress.Any, port);
         listener.Start();
-        Console.WriteLine("Server started on port " + port);
+        Console.WriteLine("Сервер запущен на порту " + port);
 
         while (true)
         {
             var client = listener.AcceptTcpClient();
-            Console.WriteLine("Client connected");
+            Console.WriteLine("Клиент подключился");
             Task.Run(() => HandleClient(client));
         }
     }
@@ -37,122 +45,157 @@ public class GameServer
     {
         try
         {
-            NetworkStream stream = client.GetStream();
+            var stream = client.GetStream();
             byte[] buffer = new byte[4096];
+            int offset = 0;
 
             while (true)
             {
-                int bytesRead = stream.Read(buffer, 0, buffer.Length);
-                if (bytesRead == 0) break;
+                int read = stream.Read(buffer, offset, buffer.Length - offset);
+                if (read == 0) break;
+                offset += read;
 
-                string json = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                var msg = JsonSerializer.Deserialize<NetworkMessage>(json);
-
-                if (msg.Type == MessageType.JOIN)
+                while (ByteConverter.TryReadMessage(buffer, 0, offset, out string msgStr, out int bytesUsed))
                 {
-                    var joinDto = JsonSerializer.Deserialize<JoinDto>(msg.Payload);
-                    var player = new Player
-                    {
-                        Id = nextPlayerId++,
-                        Nickname = joinDto.Nickname,
-                        Email = joinDto.Email,
-                        Client = client
-                    };
-                    players.Add(player);
-                    Console.WriteLine($"Player {player.Nickname} joined");
+                    var msg = MessageParser.Parse(msgStr);
+                    ProcessMessage(client, stream, msg);
 
-                    SendResponse(player, true, null, "Joined successfully");
-
-                    if (players.Count >= 2 && !gameStarted)
-                    {
-                        StartGame();
-                    }
-                }
-                else
-                {
-                    var player = players.FirstOrDefault(p => p.Client == client);
-                    if (player != null)
-                    {
-                        HandlePlayerMessage(player, msg);
-                    }
+                    Buffer.BlockCopy(buffer, bytesUsed, buffer, 0, offset - bytesUsed);
+                    offset -= bytesUsed;
                 }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Error: " + ex.Message);
+            Console.WriteLine("Ошибка: " + ex.Message);
+        }
+    }
+
+    private void ProcessMessage(TcpClient client, NetworkStream stream, NetworkMessage msg)
+    {
+        if (msg.Type == MessageType.JOIN)
+        {
+            var dto = MessageDeserializer.Deserialize<JoinDto>(msg);
+            var p = new Player
+            {
+                Id = nextId++,
+                Nickname = dto?.Nickname ?? "Player",
+                Email = dto?.Email ?? "",
+                Client = client,
+                Stream = stream
+            };
+            players.Add(p);
+            Console.WriteLine("Игрок " + p.Nickname + " присоединился (id=" + p.Id + ")");
+
+            SendResponse(p, true, "Подключено");
+
+            if (players.Count == 4 && !gameStarted)
+            {
+                StartGame();
+            }
+            else if (players.Count >= 2 && !gameStarted)
+            {
+                Console.WriteLine("Ожидание игроков... (" + players.Count + "/4)");
+                Console.WriteLine("Для начала игры с " + players.Count + " игроками введите 'start'");
+            }
+        }
+        else
+        {
+            var player = players.Find(x => x.Client == client);
+            if (player != null)
+            {
+                HandlePlayerMsg(player, msg);
+            }
         }
     }
 
     private void StartGame()
     {
         gameStarted = true;
-        Console.WriteLine("Game starting...");
+        Console.WriteLine("Игра начинается!");
+
+        var playerInfos = new List<PlayerInfoDto>();
+        foreach (var pl in players)
+        {
+            playerInfos.Add(new PlayerInfoDto
+            {
+                Id = pl.Id,
+                Nickname = pl.Nickname,
+                Email = pl.Email
+            });
+        }
 
         foreach (var p in players)
         {
-            var startDto = new StartGameDto
+            var dto = new StartGameDto
             {
                 PlayerId = p.Id,
-                PlayerCount = players.Count
+                PlayerCount = players.Count,
+                Players = playerInfos
             };
-            SendMessage(p, MessageType.START_GAME, startDto);
+            SendMsg(p, MessageType.START_GAME, dto);
         }
     }
 
-    private void HandlePlayerMessage(Player player, NetworkMessage msg)
+    private void HandlePlayerMsg(Player p, NetworkMessage msg)
     {
-        switch (msg.Type)
+        if (msg.Type == MessageType.ARCHETYPE)
         {
-            case MessageType.ARCHETYPE:
-                var archetypeDto = JsonSerializer.Deserialize<ArchetypeDto>(msg.Payload);
-                player.Archetype = archetypeDto.ArchetypeType;
-                var startRes = GameLogic.GetStartResources();
-                foreach (var r in startRes)
-                {
-                    player.AddResource(r.Key, r.Value);
-                }
-                Console.WriteLine($"Player {player.Nickname} chose {player.Archetype}");
+            var dto = MessageDeserializer.Deserialize<ArchetypeDto>(msg);
+            if (dto != null)
+            {
+                p.Archetype = dto.ArchetypeType;
+                p.InitResources();
+                Console.WriteLine("Игрок " + p.Nickname + " выбрал архетип " + p.Archetype);
 
-                bool allReady = players.All(p => p.Archetype != ArchetypeType.Neutral);
+                bool allReady = true;
+                foreach (var pl in players)
+                {
+                    if (pl.Resources.Count == 0)
+                    {
+                        allReady = false;
+                        break;
+                    }
+                }
+
                 if (allReady)
                 {
-                    StartFirstTurn();
+                    StartFirstCycle();
                 }
-                break;
-
-            case MessageType.BUILD:
-                var buildDto = JsonSerializer.Deserialize<BuildRequestDto>(msg.Payload);
-                HandleBuild(player, buildDto);
-                break;
-
-            case MessageType.UPGRADE:
-                var upgradeDto = JsonSerializer.Deserialize<UpgradeRequestDto>(msg.Payload);
-                HandleUpgrade(player, upgradeDto);
-                break;
-
-            case MessageType.MAKE_SOLDIERS:
-                var soldiersDto = JsonSerializer.Deserialize<MakeSoldiersRequestDto>(msg.Payload);
-                HandleMakeSoldiers(player, soldiersDto);
-                break;
-
-            case MessageType.ATTACK:
-                var attackDto = JsonSerializer.Deserialize<AttackRequestDto>(msg.Payload);
-                HandleAttack(player, attackDto);
-                break;
-
-            case MessageType.END_TURN:
-                HandleEndTurn(player);
-                break;
+            }
+        }
+        else if (msg.Type == MessageType.BUILD)
+        {
+            var dto = MessageDeserializer.Deserialize<BuildRequestDto>(msg);
+            if (dto != null) DoBuild(p, dto);
+        }
+        else if (msg.Type == MessageType.UPGRADE)
+        {
+            var dto = MessageDeserializer.Deserialize<UpgradeRequestDto>(msg);
+            if (dto != null) DoUpgrade(p, dto);
+        }
+        else if (msg.Type == MessageType.MAKE_SOLDIERS)
+        {
+            var dto = MessageDeserializer.Deserialize<MakeSoldiersRequestDto>(msg);
+            if (dto != null) DoMakeSoldiers(p, dto);
+        }
+        else if (msg.Type == MessageType.ATTACK)
+        {
+            var dto = MessageDeserializer.Deserialize<AttackRequestDto>(msg);
+            if (dto != null) DoAttack(p, dto);
+        }
+        else if (msg.Type == MessageType.END_TURN)
+        {
+            DoEndTurn(p);
         }
     }
 
-    private void StartFirstTurn()
+    private void StartFirstCycle()
     {
-        currentCycle = 1;
-        currentTurn = 1;
+        cycle = 1;
+        globalTurn = 1;
         ShuffleTurnOrder();
-        currentTurnIndex = 0;
+        turnIdx = 0;
         StartPlayerTurn();
     }
 
@@ -160,76 +203,92 @@ public class GameServer
     {
         turnOrder.Clear();
         foreach (var p in players)
-        {
             turnOrder.Add(p.Id);
+
+        for (int i = turnOrder.Count - 1; i > 0; i--)
+        {
+            int j = rnd.Next(i + 1);
+            int tmp = turnOrder[i];
+            turnOrder[i] = turnOrder[j];
+            turnOrder[j] = tmp;
         }
-        Random rnd = new Random();
-        turnOrder = turnOrder.OrderBy(x => rnd.Next()).ToList();
     }
 
     private void StartPlayerTurn()
     {
-        int playerId = turnOrder[currentTurnIndex];
-        var player = players.First(p => p.Id == playerId);
+        int pid = turnOrder[turnIdx];
+        var p = players.Find(x => x.Id == pid);
+        if (p == null) return;
 
-        DoProduction(player);
-        DoProcessing(player);
+        DoProduction(p);
+        DoProcessing(p);
 
         var turnDto = new StartTurnDto
         {
-            PlayerId = playerId,
-            Cycle = currentCycle,
-            Turn = currentTurn
+            PlayerId = pid,
+            Cycle = cycle,
+            Turn = globalTurn
         };
 
-        foreach (var p in players)
+        foreach (var pl in players)
         {
-            SendMessage(p, MessageType.START_TURN, turnDto);
+            SendMsg(pl, MessageType.START_TURN, turnDto);
         }
 
-        var stateDto = GetPlayerState(player);
-        SendMessage(player, MessageType.STATE, stateDto);
+        SendState(p);
     }
 
-    private void DoProduction(Player player)
+    private void DoProduction(Player p)
     {
-        var produced = new Dictionary<Resources, int>();
-        foreach (var b in player.Buildings)
+        var produced = new Dictionary<string, int>();
+
+        var sorted = p.Buildings.OrderBy(b => b.PlaceId).ToList();
+        foreach (var b in sorted)
         {
             if (GameLogic.IsProducer(b.Type))
             {
-                var res = GameLogic.GetProducerOutput(b.Type);
-                int amount = GameLogic.GetProduction(b.Type, b.Level);
-                player.AddResource(res, amount);
+                string res = GameLogic.GetProducerOutput(b.Type);
+                int amt = GameLogic.GetProduction(b.Type, b.Level);
+                p.AddResource(res, amt);
+
                 if (!produced.ContainsKey(res))
                     produced[res] = 0;
-                produced[res] += amount;
+                produced[res] += amt;
             }
         }
 
-        var prodDto = new ProductionResultDto
-        {
-            ProducedResources = produced.ToDictionary(k => k.Key.ToString(), v => v.Value)
-        };
-        SendMessage(player, MessageType.PRODUCTION_RESULT, prodDto);
+        var dto = new ProductionResultDto { ProducedResources = produced };
+        SendMsg(p, MessageType.PRODUCTION_RESULT, dto);
     }
 
-    private void DoProcessing(Player player)
+    private void DoProcessing(Player p)
     {
-        foreach (var b in player.Buildings)
+        var sorted = p.Buildings.OrderBy(b => b.PlaceId).ToList();
+        foreach (var b in sorted)
         {
             if (GameLogic.IsProcessor(b.Type))
             {
-                var input = GameLogic.GetProcessInput(b.Type);
-                var output = GameLogic.GetProcessOutput(b.Type);
+                var input = GameLogic.GetProcessorInput(b.Type);
+                string output = GameLogic.GetProcessorOutput(b.Type);
                 int maxTimes = GameLogic.GetProduction(b.Type, b.Level);
 
                 for (int i = 0; i < maxTimes; i++)
                 {
-                    if (player.HasResources(input))
+                    bool canProcess = true;
+                    foreach (var inp in input)
                     {
-                        player.SpendResources(input);
-                        player.AddResource(output, 1);
+                        if (!p.HasResource(inp.Key, inp.Value))
+                        {
+                            canProcess = false;
+                            break;
+                        }
+                    }
+
+                    if (canProcess)
+                    {
+                        foreach (var inp in input)
+                            p.RemoveResource(inp.Key, inp.Value);
+                        p.AddResource(output, 1);
                     }
                     else
                     {
@@ -240,225 +299,259 @@ public class GameServer
         }
     }
 
-    private void HandleBuild(Player player, BuildRequestDto dto)
+    private void DoBuild(Player p, BuildRequestDto dto)
     {
-        if (player.Buildings.Any(b => b.PlaceId == dto.PlaceId))
+        foreach (var b in p.Buildings)
         {
-            SendResponse(player, false, ErrorCode.PlaceOccupied, "Place occupied");
-            return;
+            if (b.PlaceId == dto.PlaceId)
+            {
+                SendResponse(p, false, "Место занято");
+                return;
+            }
         }
 
         var cost = GameLogic.GetBuildCost(dto.Type);
-        if (!player.HasResources(cost))
+        foreach (var c in cost)
         {
-            SendResponse(player, false, ErrorCode.NotEnoughResources, "Not enough resources");
-            return;
+            if (!p.HasResource(c.Key, c.Value))
+            {
+                SendResponse(p, false, "Не хватает ресурсов");
+                return;
+            }
         }
 
-        player.SpendResources(cost);
+        foreach (var c in cost)
+            p.RemoveResource(c.Key, c.Value);
 
         var building = new Building
         {
             PlaceId = dto.PlaceId,
             Type = dto.Type,
             Level = 1,
-            TurnBuilt = currentTurn
+            TurnBuilt = globalTurn
         };
-        player.Buildings.Add(building);
+        p.Buildings.Add(building);
 
-        if (player.Archetype == ArchetypeType.Engineer)
+        if (p.Archetype == ArchetypeType.Engineer)
         {
-            Random rnd = new Random();
-            int refundCount = rnd.Next(1, 3);
-            var costList = cost.ToList();
-            for (int i = 0; i < refundCount && i < costList.Count; i++)
+            var costList = cost.Keys.ToList();
+            int refund = rnd.Next(1, 3);
+            for (int i = 0; i < refund && costList.Count > 0; i++)
             {
-                var refund = costList[rnd.Next(costList.Count)];
-                player.AddResource(refund.Key, 1);
+                string res = costList[rnd.Next(costList.Count)];
+                p.AddResource(res, 1);
             }
         }
 
-        player.RecalculateDefense();
-        SendResponse(player, true, null, "Built successfully");
-        var stateDto = GetPlayerState(player);
-        SendMessage(player, MessageType.STATE, stateDto);
+        SendResponse(p, true, "Построено");
+        SendState(p);
     }
 
-    private void HandleUpgrade(Player player, UpgradeRequestDto dto)
+    private void DoUpgrade(Player p, UpgradeRequestDto dto)
     {
-        var building = player.Buildings.FirstOrDefault(b => b.PlaceId == dto.PlaceId);
-        if (building == null)
+        Building? b = null;
+        foreach (var bld in p.Buildings)
         {
-            SendResponse(player, false, ErrorCode.BuildingNotFound, "Building not found");
+            if (bld.PlaceId == dto.PlaceId)
+            {
+                b = bld;
+                break;
+            }
+        }
+
+        if (b == null)
+        {
+            SendResponse(p, false, "Здание не найдено");
             return;
         }
 
-        if (building.TurnBuilt == currentTurn || building.Level >= 3)
+        if (b.TurnBuilt == globalTurn)
         {
-            SendResponse(player, false, ErrorCode.UpgradeNotAllowed, "Upgrade not allowed");
+            SendResponse(p, false, "Нельзя улучшить в тот же ход");
             return;
         }
 
-        var cost = GameLogic.GetUpgradeCost(building.Type, building.Level + 1);
-        if (!player.HasResources(cost))
+        if (b.Level >= 3)
         {
-            SendResponse(player, false, ErrorCode.NotEnoughResources, "Not enough resources");
+            SendResponse(p, false, "Максимальный уровень");
             return;
         }
 
-        player.SpendResources(cost);
-        building.Level++;
-        building.TurnBuilt = currentTurn;
+        var cost = GameLogic.GetUpgradeCost(b.Type, b.Level + 1);
+        foreach (var c in cost)
+        {
+            if (!p.HasResource(c.Key, c.Value))
+            {
+                SendResponse(p, false, "Не хватает ресурсов");
+                return;
+            }
+        }
 
-        player.RecalculateDefense();
-        SendResponse(player, true, null, "Upgraded successfully");
-        var stateDto = GetPlayerState(player);
-        SendMessage(player, MessageType.STATE, stateDto);
+        foreach (var c in cost)
+            p.RemoveResource(c.Key, c.Value);
+
+        b.Level++;
+        b.TurnBuilt = globalTurn;
+
+        SendResponse(p, true, "Улучшено");
+        SendState(p);
     }
 
-    private void HandleMakeSoldiers(Player player, MakeSoldiersRequestDto dto)
+    private void DoMakeSoldiers(Player p, MakeSoldiersRequestDto dto)
     {
-        var barracks = player.Buildings.FirstOrDefault(b => b.PlaceId == dto.BarracksId && b.Type == BuildingType.Barracks);
+        Building? barracks = null;
+        foreach (var b in p.Buildings)
+        {
+            if (b.PlaceId == dto.BarracksId && b.Type == BuildingType.Barracks)
+            {
+                barracks = b;
+                break;
+            }
+        }
+
         if (barracks == null)
         {
-            SendResponse(player, false, ErrorCode.BuildingNotFound, "Barracks not found");
+            SendResponse(p, false, "Казармы не найдены");
             return;
         }
 
         int maxSoldiers = GameLogic.GetProduction(BuildingType.Barracks, barracks.Level);
         if (dto.Count > maxSoldiers)
         {
-            SendResponse(player, false, ErrorCode.InvalidAction, "Too many soldiers");
+            SendResponse(p, false, "Слишком много солдат");
             return;
         }
 
-        var soldierCost = GameLogic.GetSoldierCost(player.Archetype);
-        var totalCost = new Dictionary<Resources, int>();
+        var soldierCost = GameLogic.GetSoldierCost(p.Archetype);
         foreach (var c in soldierCost)
         {
-            totalCost[c.Key] = c.Value * dto.Count;
+            if (!p.HasResource(c.Key, c.Value * dto.Count))
+            {
+                SendResponse(p, false, "Не хватает ресурсов");
+                return;
+            }
         }
 
-        if (!player.HasResources(totalCost))
-        {
-            SendResponse(player, false, ErrorCode.NotEnoughResources, "Not enough resources");
-            return;
-        }
+        foreach (var c in soldierCost)
+            p.RemoveResource(c.Key, c.Value * dto.Count);
 
-        player.SpendResources(totalCost);
-        player.Soldiers += dto.Count;
+        p.Soldiers += dto.Count;
 
-        SendResponse(player, true, null, "Soldiers created");
-        var stateDto = GetPlayerState(player);
-        SendMessage(player, MessageType.STATE, stateDto);
+        SendResponse(p, true, "Солдаты созданы");
+        SendState(p);
     }
 
-    private void HandleAttack(Player player, AttackRequestDto dto)
+    private void DoAttack(Player p, AttackRequestDto dto)
     {
-        if (currentCycle <= 5)
+        if (cycle <= 5)
         {
-            SendResponse(player, false, ErrorCode.AttackNotAllowed, "Attack not allowed in first 5 cycles");
+            SendResponse(p, false, "Атака запрещена первые 5 циклов");
             return;
         }
 
-        var target = players.FirstOrDefault(p => p.Id == dto.ToPlayerId);
-        if (target == null || target.Id == player.Id)
+        Player? target = null;
+        foreach (var pl in players)
         {
-            SendResponse(player, false, ErrorCode.InvalidTarget, "Invalid target");
+            if (pl.Id == dto.ToPlayerId)
+            {
+                target = pl;
+                break;
+            }
+        }
+
+        if (target == null || target.Id == p.Id)
+        {
+            SendResponse(p, false, "Неверная цель");
             return;
         }
 
-        if (player.Soldiers < dto.Soldiers)
+        if (p.Soldiers < dto.Soldiers)
         {
-            SendResponse(player, false, ErrorCode.InvalidAction, "Not enough soldiers");
+            SendResponse(p, false, "Недостаточно солдат");
             return;
         }
 
-        player.Soldiers -= dto.Soldiers;
+        p.Soldiers -= dto.Soldiers;
 
-        int defense = target.TotalDefense;
-        if (player.Archetype == ArchetypeType.Warrior)
-        {
+        int defense = target.GetDefense();
+        if (p.Archetype == ArchetypeType.Warrior)
             defense = (int)(defense * 0.8);
-        }
-        else if (player.Archetype == ArchetypeType.Recruit)
-        {
+        else if (p.Archetype == ArchetypeType.Recruit)
             defense = (int)(defense * 1.2);
-        }
+
+        if (defense > 100) defense = 100;
 
         int lost = (int)Math.Ceiling(dto.Soldiers * (defense / 100.0));
-        if (lost > dto.Soldiers) lost = dto.Soldiers;
         int survived = dto.Soldiers - lost;
 
-        var stolen = new Dictionary<Resources, int>();
-        Random rnd = new Random();
-
+        var stolen = new Dictionary<string, int>();
         int stealsPerSoldier = 1;
-        if (player.Archetype == ArchetypeType.Glutton)
-        {
+        if (p.Archetype == ArchetypeType.Glutton)
             stealsPerSoldier = 2;
-        }
 
         for (int i = 0; i < survived * stealsPerSoldier; i++)
         {
-            var availableRes = target.Resources.Where(r => r.Key != Resources.Soldier && r.Value > 0).ToList();
-            if (availableRes.Count > 0)
+            var available = new List<string>();
+            foreach (var r in target.Resources)
             {
-                var randomRes = availableRes[rnd.Next(availableRes.Count)];
-                target.Resources[randomRes.Key]--;
-                if (!stolen.ContainsKey(randomRes.Key))
-                    stolen[randomRes.Key] = 0;
-                stolen[randomRes.Key]++;
+                if (r.Value > 0)
+                    available.Add(r.Key);
+            }
+
+            if (available.Count > 0)
+            {
+                string res = available[rnd.Next(available.Count)];
+                target.RemoveResource(res, 1);
+                
+                if (!stolen.ContainsKey(res))
+                    stolen[res] = 0;
+                stolen[res]++;
             }
         }
 
         foreach (var s in stolen)
-        {
-            player.AddResource(s.Key, s.Value);
-        }
+            p.AddResource(s.Key, s.Value);
 
-        player.Soldiers += survived;
+        p.Soldiers += survived;
 
         var attackDto = new AttackTargetDto
         {
             ToPlayerId = dto.ToPlayerId,
             Sent = dto.Soldiers,
             Lost = lost,
-            StolenResources = stolen.ToDictionary(k => k.Key.ToString(), v => v.Value)
+            StolenResources = stolen
         };
-        SendMessage(player, MessageType.ATTACK_TARGET, attackDto);
-
-        var stateDto = GetPlayerState(player);
-        SendMessage(player, MessageType.STATE, stateDto);
+        SendMsg(p, MessageType.ATTACK_TARGET, attackDto);
+        SendState(p);
     }
 
-    private void HandleEndTurn(Player player)
+    private void DoEndTurn(Player p)
     {
-        currentTurnIndex++;
-        currentTurn++;
+        turnIdx++;
+        globalTurn++;
 
-        if (currentTurnIndex >= turnOrder.Count)
+        if (turnIdx >= turnOrder.Count)
         {
-            currentCycle++;
-            currentTurnIndex = 0;
+            cycle++;
+            turnIdx = 0;
             ShuffleTurnOrder();
 
-            if (currentCycle > totalCycles)
+            if (cycle > totalCycles)
             {
                 EndGame();
                 return;
             }
         }
 
-        var turnEndDto = new TurnEndedDto
+        var dto = new TurnEndedDto
         {
-            PlayerId = player.Id,
-            NextPlayerId = turnOrder[currentTurnIndex]
+            PlayerId = p.Id,
+            NextPlayerId = turnOrder[turnIdx]
         };
 
-        foreach (var p in players)
+        foreach (var pl in players)
         {
-            SendMessage(p, MessageType.TURN_ENDED, turnEndDto);
+            SendMsg(pl, MessageType.TURN_ENDED, dto);
         }
 
         StartPlayerTurn();
@@ -466,77 +559,90 @@ public class GameServer
 
     private void EndGame()
     {
-        int maxPoints = 0;
-        Player winner = null;
+        int maxPts = 0;
+        Player? winner = null;
+
+        var allScores = new List<PlayerScoreDto>();
 
         foreach (var p in players)
         {
-            int points = p.CalculatePoints();
-            if (points > maxPoints)
+            int pts = p.CalcPoints();
+            Console.WriteLine("Игрок " + p.Nickname + ": " + pts + " очков");
+            
+            allScores.Add(new PlayerScoreDto
             {
-                maxPoints = points;
+                PlayerId = p.Id,
+                Nickname = p.Nickname,
+                Points = pts
+            });
+
+            if (pts > maxPts)
+            {
+                maxPts = pts;
                 winner = p;
             }
         }
 
-        var endDto = new GameEndDto
+        var dto = new GameEndDto
         {
-            WinnerPlayerId = winner.Id,
-            Points = maxPoints
+            WinnerPlayerId = winner?.Id ?? 0,
+            Points = maxPts,
+            AllScores = allScores
         };
 
         foreach (var p in players)
         {
-            SendMessage(p, MessageType.GAME_END, endDto);
+            SendMsg(p, MessageType.GAME_END, dto);
         }
 
-        Console.WriteLine($"Game ended. Winner: {winner.Nickname} with {maxPoints} points");
+        Console.WriteLine("Игра окончена! Победитель: " + (winner?.Nickname ?? "никто"));
     }
 
-    private StateDto GetPlayerState(Player player)
+    private void SendState(Player p)
     {
-        var state = new StateDto
+        var buildings = new List<BuildingStateDto>();
+        foreach (var b in p.Buildings)
         {
-            Resources = player.Resources.ToDictionary(k => k.Key.ToString(), v => v.Value),
-            Soldiers = player.Soldiers,
-            Defense = player.TotalDefense,
-            Buildings = player.Buildings.Select(b => new BuildingStateDto
+            buildings.Add(new BuildingStateDto
             {
                 PlaceId = b.PlaceId,
                 Type = b.Type,
                 Level = b.Level
-            }).ToList()
+            });
+        }
+
+        var dto = new StateDto
+        {
+            Resources = new Dictionary<string, int>(p.Resources),
+            Soldiers = p.Soldiers,
+            Defense = p.GetDefense(),
+            Buildings = buildings
         };
-        return state;
+        SendMsg(p, MessageType.STATE, dto);
     }
 
-    private void SendMessage(Player player, MessageType type, object payload)
+    private void SendResponse(Player p, bool success, string message)
+    {
+        var dto = new ResponseDto
+        {
+            Success = success,
+            Message = message
+        };
+        SendMsg(p, MessageType.RESPONSE, dto);
+    }
+
+    private void SendMsg(Player p, MessageType type, object payload)
     {
         try
         {
-            var msg = new NetworkMessage
-            {
-                Type = type,
-                Payload = JsonSerializer.Serialize(payload)
-            };
-            string json = JsonSerializer.Serialize(msg);
-            byte[] data = Encoding.UTF8.GetBytes(json);
-            player.Client.GetStream().Write(data, 0, data.Length);
+            var msg = MessageSerializer.Serialize(type, payload);
+            string str = MessageParser.Serialize(msg);
+            byte[] data = ByteConverter.StringToBytes(str);
+            p.Stream.Write(data, 0, data.Length);
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Error sending message: " + ex.Message);
+            Console.WriteLine("Ошибка отправки: " + ex.Message);
         }
-    }
-
-    private void SendResponse(Player player, bool success, ErrorCode? errorCode, string message)
-    {
-        var response = new ResponseDto
-        {
-            Success = success,
-            ErrorCode = errorCode,
-            Message = message
-        };
-        SendMessage(player, MessageType.RESPONSE, response);
     }
 }

@@ -5,104 +5,109 @@ namespace Server;
 
 public class Player
 {
-    public int Id { get; set; }
-    public string Nickname { get; set; } = "";
-    public string Email { get; set; } = "";
-    public TcpClient Client { get; set; } = null!;
-    public ArchetypeType Archetype { get; set; }
-    public Dictionary<Resources, int> Resources { get; set; }
-    public List<Building> Buildings { get; set; }
-    public int Soldiers { get; set; }
-    public int TotalDefense { get; set; }
+    public int Id;
+    public string Nickname = "";
+    public string Email = "";
+    public TcpClient Client = null!;
+    public NetworkStream Stream = null!;
+    public ArchetypeType Archetype = ArchetypeType.Neutral;
+    
+    public Dictionary<string, int> Resources = new Dictionary<string, int>();
+    public List<Building> Buildings = new List<Building>();
+    public int Soldiers = 0;
 
-    public Player()
+    public void InitResources()
     {
-        Resources = new Dictionary<Resources, int>();
-        Buildings = new List<Building>();
-        Soldiers = 0;
-        TotalDefense = 0;
+        Resources["Wood"] = 10;
+        Resources["Stone"] = 10;
+        Resources["Ore"] = 5;
+        Resources["Wheat"] = 8;
     }
 
-    public void AddResource(Resources res, int amount)
+    public bool HasResource(string name, int amount)
     {
-        if (!Resources.ContainsKey(res))
-            Resources[res] = 0;
-        Resources[res] += amount;
+        if (!Resources.ContainsKey(name)) return false;
+        return Resources[name] >= amount;
     }
 
-    public bool HasResources(Dictionary<Resources, int> cost)
+    public void AddResource(string name, int amount)
     {
-        foreach (var item in cost)
-        {
-            if (!Resources.ContainsKey(item.Key) || Resources[item.Key] < item.Value)
-                return false;
-        }
-        return true;
+        if (!Resources.ContainsKey(name))
+            Resources[name] = 0;
+        Resources[name] += amount;
     }
 
-    public void SpendResources(Dictionary<Resources, int> cost)
+    public void RemoveResource(string name, int amount)
     {
-        foreach (var item in cost)
-        {
-            Resources[item.Key] -= item.Value;
-        }
+        if (Resources.ContainsKey(name))
+            Resources[name] -= amount;
     }
 
-    public int CalculatePoints()
+    public int GetDefense()
     {
-        int points = 0;
-        foreach (var res in Resources)
-        {
-            if (res.Key == Common.Resources.Soldier)
-                continue;
-            int basePoints = GameLogic.GetResourcePoints(res.Key);
-            int finalPoints = basePoints;
-
-            if (Archetype == ArchetypeType.Greedy)
-            {
-                finalPoints = (int)(basePoints * 0.8);
-            }
-            else if (Archetype == ArchetypeType.Patron)
-            {
-                finalPoints = (int)(basePoints * 1.25);
-            }
-            else if (Archetype == ArchetypeType.Engineer)
-            {
-                finalPoints = (int)(basePoints * 0.8);
-            }
-            else if (Archetype == ArchetypeType.Alchemist)
-            {
-                if (res.Key == Common.Resources.Gold || res.Key == Common.Resources.Emerald)
-                {
-                    finalPoints = (int)(basePoints * 1.25);
-                }
-                else
-                {
-                    finalPoints = (int)(basePoints * 0.7);
-                    if (finalPoints < 1) finalPoints = 1;
-                }
-            }
-
-            points += finalPoints * res.Value;
-        }
-        return points;
-    }
-
-    public void RecalculateDefense()
-    {
-        int defense = 0;
+        int def = 0;
         foreach (var b in Buildings)
         {
-            defense += GameLogic.GetDefenseBonus(b.Type, b.Level);
+            if (b.Type == BuildingType.Barricade)
+            {
+                if (b.Level == 1) def += 5;
+                else if (b.Level == 2) def += 10;
+            }
+            else if (b.Type == BuildingType.DefenseTower)
+            {
+                if (b.Level == 1) def += 20;
+                else if (b.Level == 2) def += 30;
+            }
         }
+
         if (Archetype == ArchetypeType.Greedy)
-        {
-            defense = (int)(defense * 1.3);
-        }
+            def = (int)(def * 1.3);
         else if (Archetype == ArchetypeType.Patron)
+            def = (int)(def * 0.75);
+
+        return def;
+    }
+
+    public int CalcPoints()
+    {
+        int pts = 0;
+        foreach (var r in Resources)
         {
-            defense = (int)(defense * 0.75);
+            int baseP = GetResourcePoints(r.Key);
+            int finalP = baseP;
+
+            if (Archetype == ArchetypeType.Greedy)
+                finalP = (int)(baseP * 0.8);
+            else if (Archetype == ArchetypeType.Patron)
+                finalP = (int)(baseP * 1.25);
+            else if (Archetype == ArchetypeType.Engineer)
+                finalP = (int)(baseP * 0.8);
+            else if (Archetype == ArchetypeType.Alchemist)
+            {
+                if (r.Key == "Gold" || r.Key == "Emerald")
+                    finalP = (int)(baseP * 1.25);
+                else
+                {
+                    finalP = (int)(baseP * 0.7);
+                    if (finalP < 1) finalP = 1;
+                }
+            }
+
+            pts += finalP * r.Value;
         }
-        TotalDefense = defense;
+        return pts;
+    }
+
+    private int GetResourcePoints(string name)
+    {
+        if (name == "Wood" || name == "Stone" || name == "Ore" || name == "Wheat")
+            return 1;
+        if (name == "Lumber" || name == "Bricks" || name == "Metal" || name == "Coal" || name == "Sand" || name == "Bread")
+            return 3;
+        if (name == "Furniture" || name == "Walls" || name == "Tools" || name == "Glass" || name == "Weapon")
+            return 8;
+        if (name == "Gold" || name == "Emerald")
+            return 25;
+        return 0;
     }
 }

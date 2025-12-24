@@ -1,23 +1,23 @@
 using Common;
 using Common.DTO;
+using Common.Services;
 using System.Net.Sockets;
-using System.Text;
-using System.Text.Json;
 
 namespace Client
 {
     public partial class Form1 : Form
     {
-        private TcpClient client;
-        private NetworkStream stream;
-        private int myPlayerId;
-        private int currentCycle;
-        private int currentTurn;
-        private bool isMyTurn = false;
-        private Dictionary<Resources, int> resources = new Dictionary<Resources, int>();
+        private TcpClient client = null!;
+        private NetworkStream stream = null!;
+        private int myId = 0;
+        private int currentCycle = 0;
+        private int currentTurn = 0;
+        private bool myTurn = false;
+        private Dictionary<string, int> resources = new Dictionary<string, int>();
         private List<BuildingStateDto> buildings = new List<BuildingStateDto>();
         private int soldiers = 0;
         private int defense = 0;
+        private int selectedPlace = -1;
 
         public Form1()
         {
@@ -27,14 +27,14 @@ namespace Client
 
         private void LoadArchetypes()
         {
-            cmbArchetype.Items.Add("Greedy");
-            cmbArchetype.Items.Add("Patron");
-            cmbArchetype.Items.Add("Warrior");
-            cmbArchetype.Items.Add("Recruit");
-            cmbArchetype.Items.Add("Engineer");
-            cmbArchetype.Items.Add("Alchemist");
-            cmbArchetype.Items.Add("Glutton");
-            cmbArchetype.Items.Add("Neutral");
+            cmbArchetype.Items.Add("Жадина");
+            cmbArchetype.Items.Add("Меценат");
+            cmbArchetype.Items.Add("Воин");
+            cmbArchetype.Items.Add("Новобранец");
+            cmbArchetype.Items.Add("Инженер");
+            cmbArchetype.Items.Add("Алхимик");
+            cmbArchetype.Items.Add("Обжора");
+            cmbArchetype.Items.Add("Нормис");
             cmbArchetype.SelectedIndex = 7;
         }
 
@@ -45,252 +45,328 @@ namespace Client
                 client = new TcpClient("127.0.0.1", 5000);
                 stream = client.GetStream();
 
-                var joinDto = new JoinDto
+                var dto = new JoinDto
                 {
                     Nickname = txtNickname.Text,
                     Email = txtEmail.Text
                 };
+                SendMsg(MessageType.JOIN, dto);
 
-                SendMessage(MessageType.JOIN, joinDto);
-                Task.Run(() => ReceiveMessages());
+                Task.Run(() => ReceiveLoop());
 
                 btnConnect.Enabled = false;
-                Log("Connected to server");
+                Log("Подключено к серверу");
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Connection error: " + ex.Message);
+                MessageBox.Show("Ошибка: " + ex.Message);
             }
         }
 
         private void BtnSelectArchetype_Click(object sender, EventArgs e)
         {
-            ArchetypeType archetype = ArchetypeType.Neutral;
+            ArchetypeType arch = ArchetypeType.Neutral;
             switch (cmbArchetype.SelectedIndex)
             {
-                case 0: archetype = ArchetypeType.Greedy; break;
-                case 1: archetype = ArchetypeType.Patron; break;
-                case 2: archetype = ArchetypeType.Warrior; break;
-                case 3: archetype = ArchetypeType.Recruit; break;
-                case 4: archetype = ArchetypeType.Engineer; break;
-                case 5: archetype = ArchetypeType.Alchemist; break;
-                case 6: archetype = ArchetypeType.Glutton; break;
-                case 7: archetype = ArchetypeType.Neutral; break;
+                case 0: arch = ArchetypeType.Greedy; break;
+                case 1: arch = ArchetypeType.Patron; break;
+                case 2: arch = ArchetypeType.Warrior; break;
+                case 3: arch = ArchetypeType.Recruit; break;
+                case 4: arch = ArchetypeType.Engineer; break;
+                case 5: arch = ArchetypeType.Alchemist; break;
+                case 6: arch = ArchetypeType.Glutton; break;
+                case 7: arch = ArchetypeType.Neutral; break;
             }
 
-            var archetypeDto = new ArchetypeDto { ArchetypeType = archetype };
-            SendMessage(MessageType.ARCHETYPE, archetypeDto);
+            var dto = new ArchetypeDto { ArchetypeType = arch };
+            SendMsg(MessageType.ARCHETYPE, dto);
 
             cmbArchetype.Visible = false;
             btnSelectArchetype.Visible = false;
-            Log("Archetype selected: " + archetype);
+            Log("Архетип выбран");
         }
-
 
         private void BtnBuild_Click(object sender, EventArgs e)
         {
-            if (!isMyTurn)
+            if (!myTurn)
             {
-                MessageBox.Show("Not your turn");
+                MessageBox.Show("Не ваш ход");
+                return;
+            }
+
+            if (selectedPlace < 0)
+            {
+                MessageBox.Show("Выберите место на поле");
                 return;
             }
 
             var buildForm = new BuildForm();
             if (buildForm.ShowDialog() == DialogResult.OK)
             {
-                var buildDto = new BuildRequestDto
+                var dto = new BuildRequestDto
                 {
-                    PlaceId = buildForm.PlaceId,
-                    Type = buildForm.BuildingType
+                    PlaceId = selectedPlace,
+                    Type = buildForm.SelectedType
                 };
-                SendMessage(MessageType.BUILD, buildDto);
+                SendMsg(MessageType.BUILD, dto);
             }
         }
 
         private void BtnUpgrade_Click(object sender, EventArgs e)
         {
-            if (!isMyTurn)
+            if (!myTurn)
             {
-                MessageBox.Show("Not your turn");
+                MessageBox.Show("Не ваш ход");
                 return;
             }
 
-            if (lstBuildings.SelectedItem == null)
+            if (lstBuildings.SelectedIndex < 0)
             {
-                MessageBox.Show("Select a building");
+                MessageBox.Show("Выберите здание");
                 return;
             }
 
-            var building = buildings[lstBuildings.SelectedIndex];
-            var upgradeDto = new UpgradeRequestDto { PlaceId = building.PlaceId };
-            SendMessage(MessageType.UPGRADE, upgradeDto);
+            var b = buildings[lstBuildings.SelectedIndex];
+            var dto = new UpgradeRequestDto { PlaceId = b.PlaceId };
+            SendMsg(MessageType.UPGRADE, dto);
         }
 
         private void BtnMakeSoldiers_Click(object sender, EventArgs e)
         {
-            if (!isMyTurn)
+            if (!myTurn)
             {
-                MessageBox.Show("Not your turn");
+                MessageBox.Show("Не ваш ход");
                 return;
             }
 
-            var barracks = buildings.FirstOrDefault(b => b.Type == BuildingType.Barracks);
+            BuildingStateDto? barracks = null;
+            foreach (var b in buildings)
+            {
+                if (b.Type == BuildingType.Barracks)
+                {
+                    barracks = b;
+                    break;
+                }
+            }
+
             if (barracks == null)
             {
-                MessageBox.Show("No barracks");
+                MessageBox.Show("Нет казарм");
                 return;
             }
 
-            string input = Microsoft.VisualBasic.Interaction.InputBox("How many soldiers?", "Make Soldiers", "1");
+            string input = Microsoft.VisualBasic.Interaction.InputBox("Сколько солдат?", "Создать солдат", "1");
             if (int.TryParse(input, out int count))
             {
-                var soldiersDto = new MakeSoldiersRequestDto
+                var dto = new MakeSoldiersRequestDto
                 {
                     BarracksId = barracks.PlaceId,
                     Count = count
                 };
-                SendMessage(MessageType.MAKE_SOLDIERS, soldiersDto);
+                SendMsg(MessageType.MAKE_SOLDIERS, dto);
             }
         }
 
         private void BtnAttack_Click(object sender, EventArgs e)
         {
-            if (!isMyTurn)
+            if (!myTurn)
             {
-                MessageBox.Show("Not your turn");
+                MessageBox.Show("Не ваш ход");
                 return;
             }
 
-            string targetInput = Microsoft.VisualBasic.Interaction.InputBox("Target player ID:", "Attack", "2");
-            string soldiersInput = Microsoft.VisualBasic.Interaction.InputBox("How many soldiers?", "Attack", "1");
+            string targetStr = Microsoft.VisualBasic.Interaction.InputBox("ID цели:", "Атака", "2");
+            string countStr = Microsoft.VisualBasic.Interaction.InputBox("Сколько солдат?", "Атака", "1");
 
-            if (int.TryParse(targetInput, out int targetId) && int.TryParse(soldiersInput, out int soldierCount))
+            if (int.TryParse(targetStr, out int targetId) && int.TryParse(countStr, out int count))
             {
-                var attackDto = new AttackRequestDto
+                var dto = new AttackRequestDto
                 {
                     ToPlayerId = targetId,
-                    Soldiers = soldierCount
+                    Soldiers = count
                 };
-                SendMessage(MessageType.ATTACK, attackDto);
+                SendMsg(MessageType.ATTACK, dto);
             }
         }
 
         private void BtnEndTurn_Click(object sender, EventArgs e)
         {
-            if (!isMyTurn)
+            if (!myTurn)
             {
-                MessageBox.Show("Not your turn");
+                MessageBox.Show("Не ваш ход");
                 return;
             }
 
-            SendMessage(MessageType.END_TURN, new { });
-            isMyTurn = false;
+            SendMsg(MessageType.END_TURN, new { });
+            myTurn = false;
             btnEndTurn.Enabled = false;
         }
 
-        private void SendMessage(MessageType type, object payload)
+        private void GameField_PlaceClicked(object sender, int placeId)
+        {
+            selectedPlace = placeId;
+        }
+
+        private void SendMsg(MessageType type, object payload)
         {
             try
             {
-                var msg = new NetworkMessage
-                {
-                    Type = type,
-                    Payload = JsonSerializer.Serialize(payload)
-                };
-                string json = JsonSerializer.Serialize(msg);
-                byte[] data = Encoding.UTF8.GetBytes(json);
+                var msg = MessageSerializer.Serialize(type, payload);
+                string str = MessageParser.Serialize(msg);
+                byte[] data = ByteConverter.StringToBytes(str);
                 stream.Write(data, 0, data.Length);
             }
             catch (Exception ex)
             {
-                Log("Send error: " + ex.Message);
+                Log("Ошибка: " + ex.Message);
             }
         }
 
-        private void ReceiveMessages()
+        private void ReceiveLoop()
         {
             byte[] buffer = new byte[8192];
+            int offset = 0;
+
             try
             {
                 while (true)
                 {
-                    int bytesRead = stream.Read(buffer, 0, buffer.Length);
-                    if (bytesRead == 0) break;
+                    int read = stream.Read(buffer, offset, buffer.Length - offset);
+                    if (read == 0) break;
+                    offset += read;
 
-                    string json = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    var msg = JsonSerializer.Deserialize<NetworkMessage>(json);
-                    HandleMessage(msg);
+                    while (ByteConverter.TryReadMessage(buffer, 0, offset, out string msgStr, out int bytesUsed))
+                    {
+                        var msg = MessageParser.Parse(msgStr);
+                        HandleMsg(msg);
+
+                        Buffer.BlockCopy(buffer, bytesUsed, buffer, 0, offset - bytesUsed);
+                        offset -= bytesUsed;
+                    }
                 }
             }
             catch (Exception ex)
             {
-                Log("Receive error: " + ex.Message);
+                Log("Ошибка приема: " + ex.Message);
             }
         }
 
-        private void HandleMessage(NetworkMessage msg)
+        private void HandleMsg(NetworkMessage msg)
         {
             this.Invoke((MethodInvoker)delegate
             {
                 switch (msg.Type)
                 {
                     case MessageType.RESPONSE:
-                        var response = JsonSerializer.Deserialize<ResponseDto>(msg.Payload);
-                        Log(response.Message);
+                        var resp = MessageDeserializer.Deserialize<ResponseDto>(msg);
+                        if (resp != null)
+                            Log(resp.Message ?? "");
                         break;
 
                     case MessageType.START_GAME:
-                        var startGame = JsonSerializer.Deserialize<StartGameDto>(msg.Payload);
-                        myPlayerId = startGame.PlayerId;
-                        Log($"Game started! You are player {myPlayerId}");
-                        cmbArchetype.Visible = true;
-                        btnSelectArchetype.Visible = true;
+                        var start = MessageDeserializer.Deserialize<StartGameDto>(msg);
+                        if (start != null)
+                        {
+                            myId = start.PlayerId;
+                            Log("Игра началась! Вы игрок " + myId);
+                            
+                            if (start.Players != null)
+                            {
+                                Log("Игроки:");
+                                foreach (var pl in start.Players)
+                                {
+                                    Log("  " + pl.Id + ": " + pl.Nickname);
+                                }
+                            }
+                            
+                            cmbArchetype.Visible = true;
+                            btnSelectArchetype.Visible = true;
+                        }
                         break;
 
                     case MessageType.START_TURN:
-                        var startTurn = JsonSerializer.Deserialize<StartTurnDto>(msg.Payload);
-                        currentCycle = startTurn.Cycle;
-                        currentTurn = startTurn.Turn;
-                        isMyTurn = (startTurn.PlayerId == myPlayerId);
-                        
-                        lblCycle.Text = $"Cycle: {currentCycle}";
-                        lblTurn.Text = $"Turn: {currentTurn}";
-                        
-                        if (isMyTurn)
+                        var turn = MessageDeserializer.Deserialize<StartTurnDto>(msg);
+                        if (turn != null)
                         {
-                            Log("Your turn!");
-                            btnEndTurn.Enabled = true;
-                            pnlGame.Visible = true;
-                        }
-                        else
-                        {
-                            Log($"Player {startTurn.PlayerId}'s turn");
+                            currentCycle = turn.Cycle;
+                            currentTurn = turn.Turn;
+                            myTurn = (turn.PlayerId == myId);
+
+                            lblCycle.Text = "Цикл: " + currentCycle;
+                            lblTurn.Text = "Ход: " + currentTurn;
+
+                            if (myTurn)
+                            {
+                                Log("Ваш ход!");
+                                btnEndTurn.Enabled = true;
+                                pnlGame.Visible = true;
+                                AnimateTurnStart();
+                            }
+                            else
+                            {
+                                Log("Ход игрока " + turn.PlayerId);
+                            }
                         }
                         break;
 
                     case MessageType.STATE:
-                        var state = JsonSerializer.Deserialize<StateDto>(msg.Payload);
-                        UpdateState(state);
+                        var state = MessageDeserializer.Deserialize<StateDto>(msg);
+                        if (state != null)
+                            UpdateState(state);
                         break;
 
                     case MessageType.PRODUCTION_RESULT:
-                        var production = JsonSerializer.Deserialize<ProductionResultDto>(msg.Payload);
-                        Log("Production: " + string.Join(", ", production.ProducedResources.Select(r => $"{r.Key}:{r.Value}")));
+                        var prod = MessageDeserializer.Deserialize<ProductionResultDto>(msg);
+                        if (prod != null && prod.ProducedResources != null)
+                        {
+                            string prodStr = "";
+                            foreach (var r in prod.ProducedResources)
+                                prodStr += r.Key + ":" + r.Value + " ";
+                            Log("Произведено: " + prodStr);
+                        }
                         break;
 
                     case MessageType.ATTACK_TARGET:
-                        var attack = JsonSerializer.Deserialize<AttackTargetDto>(msg.Payload);
-                        Log($"Attack result: Sent {attack.Sent}, Lost {attack.Lost}, Stolen: {string.Join(", ", attack.StolenResources.Select(r => $"{r.Key}:{r.Value}"))}");
+                        var atk = MessageDeserializer.Deserialize<AttackTargetDto>(msg);
+                        if (atk != null)
+                        {
+                            string stolenStr = "";
+                            if (atk.StolenResources != null)
+                            {
+                                foreach (var r in atk.StolenResources)
+                                    stolenStr += r.Key + ":" + r.Value + " ";
+                            }
+                            Log("Атака: отправлено " + atk.Sent + ", потеряно " + atk.Lost + ", украдено: " + stolenStr);
+                            AnimateAttack();
+                        }
                         break;
 
                     case MessageType.TURN_ENDED:
-                        var turnEnded = JsonSerializer.Deserialize<TurnEndedDto>(msg.Payload);
-                        Log($"Turn ended. Next: Player {turnEnded.NextPlayerId}");
+                        var ended = MessageDeserializer.Deserialize<TurnEndedDto>(msg);
+                        if (ended != null)
+                            Log("Ход завершен. Следующий: " + ended.NextPlayerId);
                         break;
 
                     case MessageType.GAME_END:
-                        var gameEnd = JsonSerializer.Deserialize<GameEndDto>(msg.Payload);
-                        MessageBox.Show($"Game Over! Winner: Player {gameEnd.WinnerPlayerId} with {gameEnd.Points} points");
+                        var end = MessageDeserializer.Deserialize<GameEndDto>(msg);
+                        if (end != null)
+                        {
+                            string winMsg = "=== ИГРА ОКОНЧЕНА ===\n\n";
+                            winMsg += "Результаты:\n";
+                            
+                            if (end.AllScores != null)
+                            {
+                                foreach (var score in end.AllScores)
+                                {
+                                    winMsg += score.Nickname + ": " + score.Points + " очков\n";
+                                }
+                            }
+                            
+                            winMsg += "\nПобедитель: игрок " + end.WinnerPlayerId;
+                            winMsg += "\nОчки победителя: " + end.Points;
+                            
+                            MessageBox.Show(winMsg, "Конец игры");
+                        }
                         break;
                 }
             });
@@ -298,40 +374,92 @@ namespace Client
 
         private void UpdateState(StateDto state)
         {
-            resources.Clear();
-            foreach (var r in state.Resources)
-            {
-                if (Enum.TryParse<Resources>(r.Key, out var res))
-                {
-                    resources[res] = r.Value;
-                }
-            }
-
+            resources = state.Resources ?? new Dictionary<string, int>();
             soldiers = state.Soldiers;
             defense = state.Defense;
-            buildings = state.Buildings;
+            buildings = state.Buildings ?? new List<BuildingStateDto>();
 
-            lblResources.Text = "Resources:\n" + string.Join("\n", resources.Select(r => $"{r.Key}: {r.Value}")) + 
-                                $"\n\nSoldiers: {soldiers}\nDefense: {defense}%";
+            string resStr = "Ресурсы:\n";
+            foreach (var r in resources)
+                resStr += r.Key + ": " + r.Value + "\n";
+            resStr += "\nСолдаты: " + soldiers;
+            resStr += "\nЗащита: " + defense + "%";
+            lblResources.Text = resStr;
 
             lstBuildings.Items.Clear();
             foreach (var b in buildings)
             {
-                lstBuildings.Items.Add($"Place {b.PlaceId}: {b.Type} Lv{b.Level}");
+                lstBuildings.Items.Add("Место " + b.PlaceId + ": " + b.Type + " ур." + b.Level);
             }
 
             gameField.UpdateBuildings(buildings);
         }
 
-        private void Log(string message)
+        private void AnimateTurnStart()
+        {
+            var timer = new System.Windows.Forms.Timer();
+            timer.Interval = 50;
+            int step = 0;
+            Color origColor = pnlGame.BackColor;
+
+            timer.Tick += (s, e) =>
+            {
+                step++;
+                if (step <= 5)
+                {
+                    pnlGame.BackColor = Color.LightGreen;
+                }
+                else if (step <= 10)
+                {
+                    pnlGame.BackColor = origColor;
+                }
+                else
+                {
+                    timer.Stop();
+                    timer.Dispose();
+                }
+            };
+            timer.Start();
+        }
+
+        private void AnimateAttack()
+        {
+            var timer = new System.Windows.Forms.Timer();
+            timer.Interval = 100;
+            int step = 0;
+            Color origColor = pnlGame.BackColor;
+
+            timer.Tick += (s, e) =>
+            {
+                step++;
+                if (step % 2 == 1)
+                {
+                    pnlGame.BackColor = Color.Red;
+                }
+                else
+                {
+                    pnlGame.BackColor = origColor;
+                }
+
+                if (step >= 6)
+                {
+                    pnlGame.BackColor = origColor;
+                    timer.Stop();
+                    timer.Dispose();
+                }
+            };
+            timer.Start();
+        }
+
+        private void Log(string msg)
         {
             if (txtLog.InvokeRequired)
             {
-                txtLog.Invoke((MethodInvoker)delegate { Log(message); });
+                txtLog.Invoke((MethodInvoker)delegate { Log(msg); });
             }
             else
             {
-                txtLog.AppendText(message + "\r\n");
+                txtLog.AppendText(msg + "\r\n");
             }
         }
     }

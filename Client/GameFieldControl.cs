@@ -10,7 +10,7 @@ namespace Client
         private const int CellSize = 50;
         private const int GridSize = 5;
 
-        public event EventHandler<int> PlaceClicked;
+        public event EventHandler<int>? PlaceClicked;
 
         public GameFieldControl()
         {
@@ -38,24 +38,35 @@ namespace Client
                     int x = col * CellSize + 5;
                     int y = row * CellSize + 5;
 
-                    var building = buildings.FirstOrDefault(b => b.PlaceId == placeId);
-                    
+                    BuildingStateDto? building = null;
+                    foreach (var b in buildings)
+                    {
+                        if (b.PlaceId == placeId)
+                        {
+                            building = b;
+                            break;
+                        }
+                    }
+
                     Brush brush = Brushes.LightGray;
                     if (building != null)
                     {
                         if (building.Type == BuildingType.Barracks)
-                            brush = Brushes.Red;
+                            brush = Brushes.IndianRed;
                         else if (building.Type == BuildingType.Barricade || building.Type == BuildingType.DefenseTower)
-                            brush = Brushes.Blue;
+                            brush = Brushes.SteelBlue;
                         else if (building.Type == BuildingType.Laboratory || building.Type == BuildingType.AlchemyFurnace)
                             brush = Brushes.Gold;
+                        else if (GameLogic.IsProducer(building.Type))
+                            brush = Brushes.ForestGreen;
                         else
-                            brush = Brushes.Green;
+                            brush = Brushes.Orange;
                     }
 
                     if (placeId == selectedPlace)
                     {
                         g.FillRectangle(Brushes.Yellow, x, y, CellSize - 2, CellSize - 2);
+                        g.FillRectangle(brush, x + 3, y + 3, CellSize - 8, CellSize - 8);
                     }
                     else
                     {
@@ -67,17 +78,23 @@ namespace Client
                     if (building != null)
                     {
                         string text = building.Level.ToString();
-                        var font = new Font("Arial", 16, FontStyle.Bold);
+                        var font = new Font("Arial", 14, FontStyle.Bold);
                         var size = g.MeasureString(text, font);
-                        g.DrawString(text, font, Brushes.White, 
-                            x + (CellSize - size.Width) / 2, 
+                        g.DrawString(text, font, Brushes.White,
+                            x + (CellSize - size.Width) / 2,
                             y + (CellSize - size.Height) / 2);
+                    }
+                    else
+                    {
+                        string text = placeId.ToString();
+                        var font = new Font("Arial", 8);
+                        g.DrawString(text, font, Brushes.DarkGray, x + 2, y + 2);
                     }
                 }
             }
         }
 
-        private void OnMouseClick(object sender, MouseEventArgs e)
+        private void OnMouseClick(object? sender, MouseEventArgs e)
         {
             int col = (e.X - 5) / CellSize;
             int row = (e.Y - 5) / CellSize;
@@ -89,6 +106,15 @@ namespace Client
                 this.Invalidate();
                 PlaceClicked?.Invoke(this, placeId);
             }
+        }
+    }
+
+    public static class GameLogic
+    {
+        public static bool IsProducer(BuildingType type)
+        {
+            return type == BuildingType.Logging || type == BuildingType.Quarry ||
+                   type == BuildingType.Mine || type == BuildingType.Farm;
         }
     }
 }
