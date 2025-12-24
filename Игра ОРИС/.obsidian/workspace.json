@@ -1,0 +1,229 @@
+{
+  "main": {
+    "id": "3ea4ea657c1a17cf",
+    "type": "split",
+    "children": [
+      {
+        "id": "b9e4a694b1e274ba",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "f1af4bca3286baac",
+            "type": "leaf",
+            "state": {
+              "type": "release-notes",
+              "state": {
+                "currentVersion": "1.10.6"
+              },
+              "icon": "lucide-book-up",
+              "title": "примечания к выпуску 1.10.6"
+            }
+          },
+          {
+            "id": "f220d414ae4147d4",
+            "type": "leaf",
+            "state": {
+              "type": "reveal-preview-view",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "Slide Preview"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "8d6bc3977e630b7a",
+    "type": "split",
+    "children": [
+      {
+        "id": "6440cc912c35daf1",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "85d54ddca2de7ed9",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Файловый менеджер"
+            }
+          },
+          {
+            "id": "376f0cb98dc00cd8",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Поиск"
+            }
+          },
+          {
+            "id": "aa623720224d359e",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Закладки"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "b88645f395b871cb",
+    "type": "split",
+    "children": [
+      {
+        "id": "9ac69db942ab9937",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "1d022180ea481188",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Сборка.canvas",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Обратные ссылки для Сборка"
+            }
+          },
+          {
+            "id": "4d10380cc4158f2a",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Правила игры.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Исходящие ссылки из Правила игры"
+            }
+          },
+          {
+            "id": "87ba8348c749cf31",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Теги"
+            }
+          },
+          {
+            "id": "07e87b90fbfce248",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Правила игры.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Структура Правила игры"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "bases:Создать новую базу": false,
+      "switcher:Меню быстрого перехода": false,
+      "graph:Граф": false,
+      "canvas:Создать новый холст": false,
+      "daily-notes:Сегодняшняя заметка": false,
+      "templates:Вставить шаблон": false,
+      "command-palette:Открыть палитру команд": false,
+      "obsidian-advanced-slides:Show Slide Preview": false
+    }
+  },
+  "active": "85d54ddca2de7ed9",
+  "lastOpenFiles": [
+    "export/Преза/plugin/chalkboard/img/whiteboard.png",
+    "export/Преза/plugin/chalkboard/img/sponge.png",
+    "export/Преза/plugin/chalkboard/img/chalk-yellow.png",
+    "export/Преза/plugin/chalkboard/img/chalk-white.png",
+    "export/Преза/plugin/chalkboard/img/chalk-red.png",
+    "export/Преза/plugin/chalkboard/img/chalk-purple.png",
+    "export/Преза/plugin/chalkboard/img/chalk-orange.png",
+    "export/Преза/plugin/chalkboard/img/chalk-green.png",
+    "export/Преза/plugin/chalkboard/img/chalk-blue.png",
+    "export/Преза/plugin/chalkboard/img/boardmarker-red.png",
+    "export/Преза/plugin/chalkboard/img/boardmarker-yellow.png",
+    "export/Преза/plugin/chalkboard/README.md",
+    "export/Преза/plugin/chalkboard/_style.css",
+    "export/Преза/plugin/chalkboard/style.css",
+    "export/Преза/plugin/chalkboard/plugin.js",
+    "export/Преза/plugin/chalkboard/img",
+    "export/Преза/plugin/chalkboard/plugin (copy).js",
+    "export/Преза/plugin/chalkboard",
+    "export/Преза/plugin/chart/README.md",
+    "export/Преза/plugin/chart/plugin.js",
+    "export/Преза/plugin/chart/chart.min.js",
+    "export/Преза/plugin/chart",
+    "export/Преза/plugin/customcontrols/style.css",
+    "export/Преза/plugin/customcontrols/README.md",
+    "export/Преза/plugin/menu/README.md",
+    "export/Преза/plugin/menu/CONTRIBUTING.md",
+    "48],[55.md",
+    "Преза.md",
+    "Правила (по пунктам)/8. Архетипы.md",
+    "Правила игры.md",
+    "Сборка.canvas",
+    "Правила (по пунктам)/7. Условие победы.md",
+    "Правила (по пунктам)/6. Порядок ходов и циклы.md",
+    "Правила (по пунктам)/5. Оборона.md",
+    "Правила (по пунктам)/4. Порядок хода.md",
+    "Правила (по пунктам)/3. Ресурсы и очки.md",
+    "Правила (по пунктам)/1. Общее описание.md",
+    "Правила игры (гпт).md",
+    "Правила (по пунктам)/2. Игровое поле и здания.md",
+    "Архетипы.md",
+    "Ресурсы.md",
+    "Постройки/Постройки 3 уровня.md",
+    "Постройки/Постройки 2 уровня.md",
+    "Постройки/Постройки 1 уровня.md",
+    "Ресурсы и постройки (гпт, разобрать!).md"
+  ]
+}

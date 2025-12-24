@@ -1,0 +1,11 @@
+/Users/tanya_plesen/git/SemestrVibeCode/Common/bin/Debug/net9.0/Common.deps.json
+/Users/tanya_plesen/git/SemestrVibeCode/Common/bin/Debug/net9.0/Common.dll
+/Users/tanya_plesen/git/SemestrVibeCode/Common/bin/Debug/net9.0/Common.pdb
+/Users/tanya_plesen/git/SemestrVibeCode/Common/obj/Debug/net9.0/Common.GeneratedMSBuildEditorConfig.editorconfig
+/Users/tanya_plesen/git/SemestrVibeCode/Common/obj/Debug/net9.0/Common.AssemblyInfoInputs.cache
+/Users/tanya_plesen/git/SemestrVibeCode/Common/obj/Debug/net9.0/Common.AssemblyInfo.cs
+/Users/tanya_plesen/git/SemestrVibeCode/Common/obj/Debug/net9.0/Common.csproj.CoreCompileInputs.cache
+/Users/tanya_plesen/git/SemestrVibeCode/Common/obj/Debug/net9.0/Common.dll
+/Users/tanya_plesen/git/SemestrVibeCode/Common/obj/Debug/net9.0/refint/Common.dll
+/Users/tanya_plesen/git/SemestrVibeCode/Common/obj/Debug/net9.0/Common.pdb
+/Users/tanya_plesen/git/SemestrVibeCode/Common/obj/Debug/net9.0/ref/Common.dll
