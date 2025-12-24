@@ -1,386 +1,482 @@
 using Common;
-using Common.DTO;
 
 namespace Server;
 
 public class GameLogic
 {
-    private readonly GameState _state;
-    private readonly Random _random;
-    
-    public GameLogic(GameState state)
+    public static Dictionary<Resources, int> GetStartResources()
     {
-        _state = state;
-        _random = new Random();
+        var res = new Dictionary<Resources, int>();
+        res[Resources.Wood] = 10;
+        res[Resources.Stone] = 10;
+        res[Resources.Ore] = 5;
+        res[Resources.Wheat] = 8;
+        return res;
     }
-    
-    // Фаза 1: Производство
-    public ProductionResultDto ExecuteProduction(Player player)
+
+    public static int GetResourcePoints(Resources resource)
     {
-        var produced = new Dictionary<string, int>();
-        
-        for (int i = 0; i < player.Field.Length; i++)
+        switch (resource)
         {
-            var building = player.Field[i];
-            if (building == null) continue;
-            
-            if (!BuildingConfig.Buildings.TryGetValue(building.Type, out var info))
-                continue;
-            
-            if (info.Category == BuildingCategory.Producer)
+            case Resources.Wood:
+            case Resources.Stone:
+            case Resources.Ore:
+            case Resources.Wheat:
+                return 1;
+            case Resources.Lumber:
+            case Resources.Bricks:
+            case Resources.Metal:
+            case Resources.Coal:
+            case Resources.Sand:
+            case Resources.Bread:
+                return 3;
+            case Resources.Furniture:
+            case Resources.Walls:
+            case Resources.Tools:
+            case Resources.Glass:
+            case Resources.Weapon:
+                return 8;
+            case Resources.Gold:
+            case Resources.Emerald:
+                return 25;
+            default:
+                return 0;
+        }
+    }
+
+    public static Dictionary<Resources, int> GetBuildCost(BuildingType type)
+    {
+        var cost = new Dictionary<Resources, int>();
+        switch (type)
+        {
+            case BuildingType.Logging:
+                cost[Resources.Stone] = 2;
+                break;
+            case BuildingType.Quarry:
+                cost[Resources.Wood] = 2;
+                break;
+            case BuildingType.Mine:
+                cost[Resources.Wood] = 2;
+                cost[Resources.Stone] = 1;
+                break;
+            case BuildingType.Farm:
+                cost[Resources.Wood] = 2;
+                break;
+            case BuildingType.Sawmill:
+                cost[Resources.Wood] = 2;
+                cost[Resources.Stone] = 1;
+                break;
+            case BuildingType.Kiln:
+                cost[Resources.Stone] = 2;
+                cost[Resources.Wood] = 1;
+                break;
+            case BuildingType.Smelter:
+                cost[Resources.Stone] = 2;
+                cost[Resources.Ore] = 2;
+                break;
+            case BuildingType.Charcoal:
+                cost[Resources.Wood] = 2;
+                break;
+            case BuildingType.Crusher:
+                cost[Resources.Stone] = 2;
+                break;
+            case BuildingType.Bakery:
+                cost[Resources.Lumber] = 2;
+                cost[Resources.Stone] = 1;
+                break;
+            case BuildingType.Carpentry:
+                cost[Resources.Lumber] = 3;
+                cost[Resources.Bricks] = 1;
+                break;
+            case BuildingType.Masonry:
+                cost[Resources.Bricks] = 2;
+                cost[Resources.Stone] = 2;
+                break;
+            case BuildingType.Forge:
+                cost[Resources.Metal] = 2;
+                cost[Resources.Lumber] = 2;
+                break;
+            case BuildingType.Glassworks:
+                cost[Resources.Sand] = 2;
+                cost[Resources.Coal] = 1;
+                cost[Resources.Bricks] = 1;
+                break;
+            case BuildingType.Armory:
+                cost[Resources.Metal] = 2;
+                cost[Resources.Lumber] = 2;
+                break;
+            case BuildingType.Barracks:
+                cost[Resources.Lumber] = 2;
+                cost[Resources.Weapon] = 1;
+                break;
+            case BuildingType.Laboratory:
+                cost[Resources.Glass] = 2;
+                cost[Resources.Tools] = 2;
+                cost[Resources.Coal] = 1;
+                break;
+            case BuildingType.AlchemyFurnace:
+                cost[Resources.Metal] = 2;
+                cost[Resources.Coal] = 2;
+                cost[Resources.Tools] = 2;
+                break;
+            case BuildingType.Barricade:
+                cost[Resources.Lumber] = 2;
+                cost[Resources.Stone] = 1;
+                break;
+            case BuildingType.DefenseTower:
+                cost[Resources.Walls] = 1;
+                cost[Resources.Tools] = 1;
+                cost[Resources.Weapon] = 1;
+                break;
+        }
+        return cost;
+    }
+
+    public static Dictionary<Resources, int> GetUpgradeCost(BuildingType type, int level)
+    {
+        var cost = new Dictionary<Resources, int>();
+        if (level == 2)
+        {
+            switch (type)
             {
-                var levelInfo = info.Levels[building.Level];
-                if (levelInfo.Output != null)
-                {
-                    foreach (var (resource, amount) in levelInfo.Output)
-                    {
-                        if (!produced.ContainsKey(resource))
-                            produced[resource] = 0;
-                        produced[resource] += amount;
-                    }
-                }
+                case BuildingType.Logging:
+                    cost[Resources.Stone] = 1;
+                    cost[Resources.Lumber] = 1;
+                    break;
+                case BuildingType.Quarry:
+                    cost[Resources.Wood] = 1;
+                    cost[Resources.Bricks] = 1;
+                    break;
+                case BuildingType.Mine:
+                    cost[Resources.Bricks] = 2;
+                    break;
+                case BuildingType.Farm:
+                    cost[Resources.Wood] = 1;
+                    cost[Resources.Lumber] = 1;
+                    break;
+                case BuildingType.Sawmill:
+                    cost[Resources.Lumber] = 2;
+                    break;
+                case BuildingType.Kiln:
+                    cost[Resources.Bricks] = 2;
+                    break;
+                case BuildingType.Smelter:
+                    cost[Resources.Metal] = 1;
+                    cost[Resources.Bricks] = 1;
+                    break;
+                case BuildingType.Charcoal:
+                    cost[Resources.Lumber] = 1;
+                    cost[Resources.Wood] = 1;
+                    break;
+                case BuildingType.Crusher:
+                    cost[Resources.Bricks] = 1;
+                    cost[Resources.Stone] = 1;
+                    break;
+                case BuildingType.Bakery:
+                    cost[Resources.Bread] = 1;
+                    cost[Resources.Lumber] = 1;
+                    break;
+                case BuildingType.Carpentry:
+                    cost[Resources.Furniture] = 2;
+                    break;
+                case BuildingType.Masonry:
+                    cost[Resources.Walls] = 1;
+                    cost[Resources.Bricks] = 1;
+                    break;
+                case BuildingType.Forge:
+                    cost[Resources.Tools] = 1;
+                    cost[Resources.Metal] = 1;
+                    break;
+                case BuildingType.Glassworks:
+                    cost[Resources.Glass] = 1;
+                    cost[Resources.Sand] = 1;
+                    break;
+                case BuildingType.Armory:
+                    cost[Resources.Weapon] = 1;
+                    cost[Resources.Metal] = 1;
+                    break;
+                case BuildingType.Barracks:
+                    cost[Resources.Walls] = 1;
+                    cost[Resources.Bread] = 1;
+                    break;
+                case BuildingType.Laboratory:
+                    cost[Resources.Emerald] = 1;
+                    cost[Resources.Glass] = 1;
+                    break;
+                case BuildingType.AlchemyFurnace:
+                    cost[Resources.Gold] = 1;
+                    cost[Resources.Metal] = 1;
+                    break;
+                case BuildingType.Barricade:
+                    cost[Resources.Metal] = 1;
+                    break;
+                case BuildingType.DefenseTower:
+                    cost[Resources.Weapon] = 3;
+                    break;
             }
         }
-        
-        player.AddResources(produced);
-        
-        return new ProductionResultDto
+        else if (level == 3)
         {
-            Produced = produced
-        };
-    }
-    
-    // Фаза 2: Переработка
-    public ProductionResultDto ExecuteProcessing(Player player)
-    {
-        var produced = new Dictionary<string, int>();
-        
-        for (int i = 0; i < player.Field.Length; i++)
-        {
-            var building = player.Field[i];
-            if (building == null) continue;
-            
-            if (!BuildingConfig.Buildings.TryGetValue(building.Type, out var info))
-                continue;
-            
-            if (info.Category == BuildingCategory.Processor || info.Category == BuildingCategory.Precious)
+            switch (type)
             {
-                var levelInfo = info.Levels[building.Level];
-                if (levelInfo.Input != null && levelInfo.Output != null)
-                {
-                    // Проверяем, хватает ли ресурсов
-                    if (player.HasResources(levelInfo.Input))
-                    {
-                        player.ConsumeResources(levelInfo.Input);
-                        
-                        foreach (var (resource, amount) in levelInfo.Output)
-                        {
-                            if (!produced.ContainsKey(resource))
-                                produced[resource] = 0;
-                            produced[resource] += amount;
-                        }
-                        
-                        player.AddResources(levelInfo.Output);
-                    }
-                }
+                case BuildingType.Logging:
+                    cost[Resources.Lumber] = 2;
+                    cost[Resources.Bricks] = 1;
+                    break;
+                case BuildingType.Quarry:
+                    cost[Resources.Bricks] = 2;
+                    cost[Resources.Lumber] = 1;
+                    break;
+                case BuildingType.Mine:
+                    cost[Resources.Walls] = 1;
+                    cost[Resources.Tools] = 1;
+                    break;
+                case BuildingType.Farm:
+                    cost[Resources.Lumber] = 2;
+                    cost[Resources.Bread] = 1;
+                    break;
+                case BuildingType.Sawmill:
+                    cost[Resources.Bricks] = 1;
+                    cost[Resources.Lumber] = 2;
+                    break;
+                case BuildingType.Kiln:
+                    cost[Resources.Walls] = 1;
+                    cost[Resources.Lumber] = 1;
+                    break;
+                case BuildingType.Smelter:
+                    cost[Resources.Metal] = 2;
+                    cost[Resources.Walls] = 1;
+                    break;
+                case BuildingType.Charcoal:
+                    cost[Resources.Lumber] = 2;
+                    cost[Resources.Coal] = 1;
+                    break;
+                case BuildingType.Crusher:
+                    cost[Resources.Bricks] = 2;
+                    cost[Resources.Sand] = 1;
+                    break;
+                case BuildingType.Bakery:
+                    cost[Resources.Bread] = 2;
+                    cost[Resources.Bricks] = 1;
+                    break;
+                case BuildingType.Carpentry:
+                    cost[Resources.Furniture] = 1;
+                    cost[Resources.Walls] = 1;
+                    break;
+                case BuildingType.Masonry:
+                    cost[Resources.Walls] = 2;
+                    cost[Resources.Tools] = 1;
+                    break;
+                case BuildingType.Forge:
+                    cost[Resources.Tools] = 2;
+                    cost[Resources.Walls] = 1;
+                    break;
+                case BuildingType.Glassworks:
+                    cost[Resources.Glass] = 2;
+                    cost[Resources.Tools] = 1;
+                    break;
+                case BuildingType.Armory:
+                    cost[Resources.Weapon] = 2;
+                    cost[Resources.Tools] = 1;
+                    break;
+                case BuildingType.Barracks:
+                    cost[Resources.Weapon] = 1;
+                    cost[Resources.Walls] = 1;
+                    cost[Resources.Bread] = 1;
+                    break;
+                case BuildingType.Laboratory:
+                    cost[Resources.Emerald] = 2;
+                    cost[Resources.Tools] = 1;
+                    break;
+                case BuildingType.AlchemyFurnace:
+                    cost[Resources.Gold] = 2;
+                    cost[Resources.Tools] = 1;
+                    break;
             }
         }
-        
-        return new ProductionResultDto
-        {
-            Produced = produced
-        };
+        return cost;
     }
-    
-    // Фаза 3: Производство солдат
-    public ResponseDto MakeSoldiers(Player player, int count)
+
+    public static int GetProduction(BuildingType type, int level)
     {
-        // Находим казармы и их максимальную производительность
-        int maxProduction = 0;
-        foreach (var building in player.Field)
+        if (type == BuildingType.Logging || type == BuildingType.Quarry || type == BuildingType.Mine || type == BuildingType.Farm)
         {
-            if (building?.Type == BuildingType.Barracks)
-            {
-                var info = BuildingConfig.Buildings[BuildingType.Barracks];
-                var levelInfo = info.Levels[building.Level];
-                if (levelInfo.Output != null && levelInfo.Output.ContainsKey("Soldier"))
-                {
-                    maxProduction += levelInfo.Output["Soldier"];
-                }
-            }
+            if (level == 1) return 2;
+            if (level == 2) return 3;
+            if (level == 3) return 6;
         }
-        
-        if (count > maxProduction)
+        else if (type == BuildingType.Sawmill || type == BuildingType.Kiln || type == BuildingType.Smelter || 
+                 type == BuildingType.Charcoal || type == BuildingType.Crusher || type == BuildingType.Bakery)
         {
-            return new ResponseDto
-            {
-                Success = false,
-                ErrorCode = ErrorCode.InvalidAction,
-                Message = $"Можно произвести максимум {maxProduction} солдат за ход"
-            };
+            if (level == 1) return 1;
+            if (level == 2) return 2;
+            if (level == 3) return 4;
         }
-        
-        // Рассчитываем стоимость с учетом архетипа
-        var cost = GetSoldierCost(player.Archetype, count);
-        
-        if (!player.HasResources(cost))
+        else if (type == BuildingType.Carpentry || type == BuildingType.Masonry || type == BuildingType.Forge || 
+                 type == BuildingType.Glassworks || type == BuildingType.Armory)
         {
-            return new ResponseDto
-            {
-                Success = false,
-                ErrorCode = ErrorCode.NotEnoughResources,
-                Message = "Недостаточно ресурсов для производства солдат"
-            };
+            if (level == 1) return 1;
+            if (level == 2) return 2;
+            if (level == 3) return 3;
         }
-        
-        player.ConsumeResources(cost);
-        player.Soldiers += count;
-        
-        return new ResponseDto { Success = true };
+        else if (type == BuildingType.Barracks)
+        {
+            if (level == 1) return 1;
+            if (level == 2) return 2;
+            if (level == 3) return 3;
+        }
+        else if (type == BuildingType.Laboratory || type == BuildingType.AlchemyFurnace)
+        {
+            if (level == 1) return 1;
+            if (level == 2) return 1;
+            if (level == 3) return 2;
+        }
+        return 0;
     }
-    
-    private Dictionary<string, int> GetSoldierCost(ArchetypeType archetype, int count)
+
+    public static int GetDefenseBonus(BuildingType type, int level)
     {
-        var baseCost = archetype switch
+        if (type == BuildingType.Barricade)
         {
-            ArchetypeType.Warrior => new Dictionary<string, int> { { "Bread", 5 }, { "Weapon", 2 } },
-            ArchetypeType.Recruit => new Dictionary<string, int> { { "Bread", 1 }, { "Weapon", 1 } },
-            ArchetypeType.Glutton => new Dictionary<string, int> { { "Bread", 6 }, { "Weapon", 1 } },
-            _ => new Dictionary<string, int> { { "Bread", 3 }, { "Weapon", 1 } }
-        };
-        
-        return baseCost.ToDictionary(kv => kv.Key, kv => kv.Value * count);
+            if (level == 1) return 5;
+            if (level == 2) return 10;
+        }
+        else if (type == BuildingType.DefenseTower)
+        {
+            if (level == 1) return 20;
+            if (level == 2) return 30;
+        }
+        return 0;
     }
-    
-    // Фаза 4: Атака
-    public AttackTargetDto ExecuteAttack(Player attacker, Player target, int soldierCount)
+
+    public static Dictionary<Resources, int> GetProcessInput(BuildingType type)
     {
-        if (_state.CurrentCycle < GameConfig.PeaceProtectionCycles)
+        var input = new Dictionary<Resources, int>();
+        switch (type)
         {
-            return new AttackTargetDto
-            {
-                Success = false,
-                Message = "Атаки запрещены в первые 5 циклов"
-            };
+            case BuildingType.Sawmill:
+                input[Resources.Wood] = 2;
+                break;
+            case BuildingType.Kiln:
+                input[Resources.Stone] = 2;
+                break;
+            case BuildingType.Smelter:
+                input[Resources.Ore] = 3;
+                break;
+            case BuildingType.Charcoal:
+                input[Resources.Wood] = 2;
+                break;
+            case BuildingType.Crusher:
+                input[Resources.Stone] = 2;
+                break;
+            case BuildingType.Bakery:
+                input[Resources.Wheat] = 2;
+                input[Resources.Wood] = 1;
+                break;
+            case BuildingType.Carpentry:
+                input[Resources.Lumber] = 3;
+                break;
+            case BuildingType.Masonry:
+                input[Resources.Bricks] = 2;
+                input[Resources.Stone] = 1;
+                break;
+            case BuildingType.Forge:
+                input[Resources.Metal] = 2;
+                input[Resources.Wood] = 1;
+                break;
+            case BuildingType.Glassworks:
+                input[Resources.Sand] = 2;
+                input[Resources.Coal] = 1;
+                break;
+            case BuildingType.Armory:
+                input[Resources.Metal] = 2;
+                input[Resources.Lumber] = 1;
+                break;
+            case BuildingType.Laboratory:
+                input[Resources.Glass] = 2;
+                input[Resources.Coal] = 1;
+                input[Resources.Tools] = 1;
+                break;
+            case BuildingType.AlchemyFurnace:
+                input[Resources.Metal] = 2;
+                input[Resources.Coal] = 2;
+                input[Resources.Tools] = 1;
+                break;
         }
-        
-        if (attacker.Soldiers < soldierCount)
-        {
-            return new AttackTargetDto
-            {
-                Success = false,
-                Message = "Недостаточно солдат"
-            };
-        }
-        
-        // Рассчитываем потери
-        int targetDefense = target.GetDefense();
-        
-        // Модификаторы архетипа атакующего
-        if (attacker.Archetype == ArchetypeType.Warrior)
-            targetDefense = Math.Max(0, targetDefense - 20);
-        else if (attacker.Archetype == ArchetypeType.Recruit)
-            targetDefense += 20;
-        
-        double lossRate = Math.Min(1.0, targetDefense / 100.0);
-        int losses = (int)Math.Ceiling(soldierCount * lossRate);
-        int survivors = soldierCount - losses;
-        
-        attacker.Soldiers -= soldierCount;
-        
-        // Воруем ресурсы
-        var stolen = new Dictionary<string, int>();
-        int resourcesPerSoldier = attacker.Archetype == ArchetypeType.Glutton ? 2 : 1;
-        int totalResourcesToSteal = survivors * resourcesPerSoldier;
-        
-        var availableResources = target.Resources.Where(kv => kv.Value > 0).ToList();
-        
-        for (int i = 0; i < totalResourcesToSteal && availableResources.Count > 0; i++)
-        {
-            var randomIndex = _random.Next(availableResources.Count);
-            var (resource, _) = availableResources[randomIndex];
-            
-            if (target.Resources[resource] > 0)
-            {
-                target.Resources[resource]--;
-                if (target.Resources[resource] == 0)
-                {
-                    target.Resources.Remove(resource);
-                    availableResources.RemoveAt(randomIndex);
-                }
-                
-                if (!stolen.ContainsKey(resource))
-                    stolen[resource] = 0;
-                stolen[resource]++;
-            }
-        }
-        
-        attacker.AddResources(stolen);
-        attacker.Soldiers += survivors;
-        
-        return new AttackTargetDto
-        {
-            Success = true,
-            Losses = losses,
-            Survivors = survivors,
-            StolenResources = stolen
-        };
+        return input;
     }
-    
-    // Фаза 5: Строительство
-    public ResponseDto BuildBuilding(Player player, int placeId, BuildingType buildingType)
+
+    public static Resources GetProcessOutput(BuildingType type)
     {
-        if (placeId < 0 || placeId >= player.Field.Length)
+        switch (type)
         {
-            return new ResponseDto
-            {
-                Success = false,
-                ErrorCode = ErrorCode.InvalidAction,
-                Message = "Неверный номер клетки"
-            };
+            case BuildingType.Sawmill: return Resources.Lumber;
+            case BuildingType.Kiln: return Resources.Bricks;
+            case BuildingType.Smelter: return Resources.Metal;
+            case BuildingType.Charcoal: return Resources.Coal;
+            case BuildingType.Crusher: return Resources.Sand;
+            case BuildingType.Bakery: return Resources.Bread;
+            case BuildingType.Carpentry: return Resources.Furniture;
+            case BuildingType.Masonry: return Resources.Walls;
+            case BuildingType.Forge: return Resources.Tools;
+            case BuildingType.Glassworks: return Resources.Glass;
+            case BuildingType.Armory: return Resources.Weapon;
+            case BuildingType.Laboratory: return Resources.Emerald;
+            case BuildingType.AlchemyFurnace: return Resources.Gold;
+            default: return Resources.Wood;
         }
-        
-        if (player.Field[placeId] != null)
-        {
-            return new ResponseDto
-            {
-                Success = false,
-                ErrorCode = ErrorCode.InvalidAction,
-                Message = "Клетка уже занята"
-            };
-        }
-        
-        if (!BuildingConfig.Buildings.TryGetValue(buildingType, out var info))
-        {
-            return new ResponseDto
-            {
-                Success = false,
-                ErrorCode = ErrorCode.InvalidAction,
-                Message = "Неизвестный тип здания"
-            };
-        }
-        
-        if (!player.HasResources(info.BuildCost))
-        {
-            return new ResponseDto
-            {
-                Success = false,
-                ErrorCode = ErrorCode.NotEnoughResources,
-                Message = "Недостаточно ресурсов для строительства"
-            };
-        }
-        
-        player.ConsumeResources(info.BuildCost);
-        
-        // Инженер возвращает 1-2 случайных ресурса
-        if (player.Archetype == ArchetypeType.Engineer)
-        {
-            var refundCount = _random.Next(1, 3);
-            var costList = info.BuildCost.ToList();
-            for (int i = 0; i < refundCount && costList.Count > 0; i++)
-            {
-                var randomIndex = _random.Next(costList.Count);
-                var (resource, _) = costList[randomIndex];
-                player.AddResources(new Dictionary<string, int> { { resource, 1 } });
-            }
-        }
-        
-        player.Field[placeId] = new Building(buildingType, placeId, player.CurrentTurn);
-        
-        return new ResponseDto { Success = true };
     }
-    
-    public ResponseDto UpgradeBuilding(Player player, int placeId)
+
+    public static Resources GetProducerOutput(BuildingType type)
     {
-        if (placeId < 0 || placeId >= player.Field.Length)
+        switch (type)
         {
-            return new ResponseDto
-            {
-                Success = false,
-                ErrorCode = ErrorCode.InvalidAction,
-                Message = "Неверный номер клетки"
-            };
+            case BuildingType.Logging: return Resources.Wood;
+            case BuildingType.Quarry: return Resources.Stone;
+            case BuildingType.Mine: return Resources.Ore;
+            case BuildingType.Farm: return Resources.Wheat;
+            default: return Resources.Wood;
         }
-        
-        var building = player.Field[placeId];
-        if (building == null)
+    }
+
+    public static bool IsProducer(BuildingType type)
+    {
+        return type == BuildingType.Logging || type == BuildingType.Quarry || 
+               type == BuildingType.Mine || type == BuildingType.Farm;
+    }
+
+    public static bool IsProcessor(BuildingType type)
+    {
+        return type == BuildingType.Sawmill || type == BuildingType.Kiln || type == BuildingType.Smelter ||
+               type == BuildingType.Charcoal || type == BuildingType.Crusher || type == BuildingType.Bakery ||
+               type == BuildingType.Carpentry || type == BuildingType.Masonry || type == BuildingType.Forge ||
+               type == BuildingType.Glassworks || type == BuildingType.Armory || type == BuildingType.Laboratory ||
+               type == BuildingType.AlchemyFurnace;
+    }
+
+    public static Dictionary<Resources, int> GetSoldierCost(ArchetypeType archetype)
+    {
+        var cost = new Dictionary<Resources, int>();
+        if (archetype == ArchetypeType.Warrior)
         {
-            return new ResponseDto
-            {
-                Success = false,
-                ErrorCode = ErrorCode.InvalidAction,
-                Message = "На этой клетке нет здания"
-            };
+            cost[Resources.Bread] = 5;
+            cost[Resources.Weapon] = 2;
         }
-        
-        if (building.TurnBuilt == player.CurrentTurn)
+        else if (archetype == ArchetypeType.Recruit)
         {
-            return new ResponseDto
-            {
-                Success = false,
-                ErrorCode = ErrorCode.UpgradeNotAllowed,
-                Message = "Нельзя улучшить здание в тот же ход, когда оно построено"
-            };
+            cost[Resources.Bread] = 1;
+            cost[Resources.Weapon] = 1;
         }
-        
-        if (building.Level >= 3)
+        else if (archetype == ArchetypeType.Glutton)
         {
-            return new ResponseDto
-            {
-                Success = false,
-                ErrorCode = ErrorCode.InvalidAction,
-                Message = "Здание уже максимального уровня"
-            };
+            cost[Resources.Bread] = 6;
+            cost[Resources.Weapon] = 1;
         }
-        
-        if (!BuildingConfig.Buildings.TryGetValue(building.Type, out var info))
+        else
         {
-            return new ResponseDto
-            {
-                Success = false,
-                ErrorCode = ErrorCode.InvalidAction,
-                Message = "Неизвестный тип здания"
-            };
+            cost[Resources.Bread] = 3;
+            cost[Resources.Weapon] = 1;
         }
-        
-        var nextLevel = building.Level + 1;
-        if (!info.Levels.TryGetValue(nextLevel, out var levelInfo) || levelInfo.UpgradeCost == null)
-        {
-            return new ResponseDto
-            {
-                Success = false,
-                ErrorCode = ErrorCode.InvalidAction,
-                Message = "Невозможно улучшить это здание"
-            };
-        }
-        
-        if (!player.HasResources(levelInfo.UpgradeCost))
-        {
-            return new ResponseDto
-            {
-                Success = false,
-                ErrorCode = ErrorCode.NotEnoughResources,
-                Message = "Недостаточно ресурсов для улучшения"
-            };
-        }
-        
-        player.ConsumeResources(levelInfo.UpgradeCost);
-        
-        // Инженер возвращает 1-2 случайных ресурса
-        if (player.Archetype == ArchetypeType.Engineer)
-        {
-            var refundCount = _random.Next(1, 3);
-            var costList = levelInfo.UpgradeCost.ToList();
-            for (int i = 0; i < refundCount && costList.Count > 0; i++)
-            {
-                var randomIndex = _random.Next(costList.Count);
-                var (resource, _) = costList[randomIndex];
-                player.AddResources(new Dictionary<string, int> { { resource, 1 } });
-            }
-        }
-        
-        building.Level = nextLevel;
-        
-        return new ResponseDto { Success = true };
+        return cost;
     }
 }

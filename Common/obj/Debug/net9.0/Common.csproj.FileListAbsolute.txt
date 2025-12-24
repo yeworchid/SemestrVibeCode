@@ -9,3 +9,4 @@
 /Users/tanya_plesen/git/SemestrVibeCode/Common/obj/Debug/net9.0/refint/Common.dll
 /Users/tanya_plesen/git/SemestrVibeCode/Common/obj/Debug/net9.0/Common.pdb
 /Users/tanya_plesen/git/SemestrVibeCode/Common/obj/Debug/net9.0/ref/Common.dll
+/Users/tanya_plesen/git/SemestrVibeCode/Common/obj/Debug/net9.0/Common.sourcelink.json

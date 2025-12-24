@@ -1,112 +1,94 @@
 using Common;
 using Common.DTO;
 
-namespace Client;
-
-public class GameFieldControl : Panel
+namespace Client
 {
-    private const int CellSize = 80;
-    private const int GridSize = 5;
-    private Button[,] _cells;
-    private StateDto? _state;
-    
-    public event Action<int>? CellClicked;
-    
-    public GameFieldControl()
+    public class GameFieldControl : Control
     {
-        Width = CellSize * GridSize + 10;
-        Height = CellSize * GridSize + 10;
-        BorderStyle = BorderStyle.FixedSingle;
-        
-        _cells = new Button[GridSize, GridSize];
-        
-        for (int y = 0; y < GridSize; y++)
+        private List<BuildingStateDto> buildings = new List<BuildingStateDto>();
+        private int selectedPlace = -1;
+        private const int CellSize = 50;
+        private const int GridSize = 5;
+
+        public event EventHandler<int> PlaceClicked;
+
+        public GameFieldControl()
         {
-            for (int x = 0; x < GridSize; x++)
+            this.Size = new Size(GridSize * CellSize + 10, GridSize * CellSize + 10);
+            this.DoubleBuffered = true;
+            this.MouseClick += OnMouseClick;
+        }
+
+        public void UpdateBuildings(List<BuildingStateDto> newBuildings)
+        {
+            buildings = newBuildings;
+            this.Invalidate();
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            Graphics g = e.Graphics;
+
+            for (int row = 0; row < GridSize; row++)
             {
-                int placeId = y * GridSize + x;
-                var btn = new Button
+                for (int col = 0; col < GridSize; col++)
                 {
-                    Location = new Point(x * CellSize + 5, y * CellSize + 5),
-                    Size = new Size(CellSize - 2, CellSize - 2),
-                    Tag = placeId,
-                    BackColor = Color.LightGray,
-                    Font = new Font("Arial", 8)
-                };
-                
-                btn.Click += (s, e) => CellClicked?.Invoke(placeId);
-                
-                _cells[y, x] = btn;
-                Controls.Add(btn);
+                    int placeId = row * GridSize + col;
+                    int x = col * CellSize + 5;
+                    int y = row * CellSize + 5;
+
+                    var building = buildings.FirstOrDefault(b => b.PlaceId == placeId);
+                    
+                    Brush brush = Brushes.LightGray;
+                    if (building != null)
+                    {
+                        if (building.Type == BuildingType.Barracks)
+                            brush = Brushes.Red;
+                        else if (building.Type == BuildingType.Barricade || building.Type == BuildingType.DefenseTower)
+                            brush = Brushes.Blue;
+                        else if (building.Type == BuildingType.Laboratory || building.Type == BuildingType.AlchemyFurnace)
+                            brush = Brushes.Gold;
+                        else
+                            brush = Brushes.Green;
+                    }
+
+                    if (placeId == selectedPlace)
+                    {
+                        g.FillRectangle(Brushes.Yellow, x, y, CellSize - 2, CellSize - 2);
+                    }
+                    else
+                    {
+                        g.FillRectangle(brush, x, y, CellSize - 2, CellSize - 2);
+                    }
+
+                    g.DrawRectangle(Pens.Black, x, y, CellSize - 2, CellSize - 2);
+
+                    if (building != null)
+                    {
+                        string text = building.Level.ToString();
+                        var font = new Font("Arial", 16, FontStyle.Bold);
+                        var size = g.MeasureString(text, font);
+                        g.DrawString(text, font, Brushes.White, 
+                            x + (CellSize - size.Width) / 2, 
+                            y + (CellSize - size.Height) / 2);
+                    }
+                }
             }
         }
-    }
-    
-    public void UpdateState(StateDto state)
-    {
-        _state = state;
-        
-        // Очищаем все клетки
-        for (int y = 0; y < GridSize; y++)
+
+        private void OnMouseClick(object sender, MouseEventArgs e)
         {
-            for (int x = 0; x < GridSize; x++)
+            int col = (e.X - 5) / CellSize;
+            int row = (e.Y - 5) / CellSize;
+
+            if (col >= 0 && col < GridSize && row >= 0 && row < GridSize)
             {
-                _cells[y, x].Text = "";
-                _cells[y, x].BackColor = Color.LightGray;
+                int placeId = row * GridSize + col;
+                selectedPlace = placeId;
+                this.Invalidate();
+                PlaceClicked?.Invoke(this, placeId);
             }
         }
-        
-        // Отображаем здания
-        foreach (var building in state.Buildings)
-        {
-            int y = building.PlaceId / GridSize;
-            int x = building.PlaceId % GridSize;
-            
-            var btn = _cells[y, x];
-            btn.Text = GetBuildingShortName(building.Type) + $"\nLv{building.Level}";
-            btn.BackColor = GetBuildingColor(building.Type);
-        }
-    }
-    
-    private string GetBuildingShortName(BuildingType type)
-    {
-        return type switch
-        {
-            BuildingType.Logging => "Лес",
-            BuildingType.Quarry => "Карьер",
-            BuildingType.Mine => "Шахта",
-            BuildingType.Farm => "Поле",
-            BuildingType.Sawmill => "Пилка",
-            BuildingType.KilnFurnace => "Печь",
-            BuildingType.Smelter => "Плавка",
-            BuildingType.Charcoal => "Уголь",
-            BuildingType.Crusher => "Дробка",
-            BuildingType.Bakery => "Пекарня",
-            BuildingType.Carpentry => "Столяр",
-            BuildingType.Stonemason => "Камень",
-            BuildingType.Forge => "Кузня",
-            BuildingType.Glassworks => "Стекло",
-            BuildingType.Armory => "Оружие",
-            BuildingType.Laboratory => "Лаб",
-            BuildingType.AlchemicalFurnace => "Алхим",
-            BuildingType.Barracks => "Казарма",
-            BuildingType.Barricade => "Баррик",
-            BuildingType.DefenseTower => "Башня",
-            _ => "???"
-        };
-    }
-    
-    private Color GetBuildingColor(BuildingType type)
-    {
-        return type switch
-        {
-            BuildingType.Logging or BuildingType.Quarry or BuildingType.Mine or BuildingType.Farm => Color.LightGreen,
-            BuildingType.Sawmill or BuildingType.KilnFurnace or BuildingType.Smelter or BuildingType.Charcoal or BuildingType.Crusher or BuildingType.Bakery => Color.LightBlue,
-            BuildingType.Carpentry or BuildingType.Stonemason or BuildingType.Forge or BuildingType.Glassworks or BuildingType.Armory => Color.LightCoral,
-            BuildingType.Laboratory or BuildingType.AlchemicalFurnace => Color.Gold,
-            BuildingType.Barracks => Color.Orange,
-            BuildingType.Barricade or BuildingType.DefenseTower => Color.Brown,
-            _ => Color.Gray
-        };
     }
 }

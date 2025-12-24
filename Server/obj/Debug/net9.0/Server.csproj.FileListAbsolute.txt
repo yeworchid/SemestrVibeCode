@@ -16,3 +16,4 @@
 /Users/tanya_plesen/git/SemestrVibeCode/Server/obj/Debug/net9.0/Server.pdb
 /Users/tanya_plesen/git/SemestrVibeCode/Server/obj/Debug/net9.0/Server.genruntimeconfig.cache
 /Users/tanya_plesen/git/SemestrVibeCode/Server/obj/Debug/net9.0/ref/Server.dll
+/Users/tanya_plesen/git/SemestrVibeCode/Server/obj/Debug/net9.0/Server.sourcelink.json
