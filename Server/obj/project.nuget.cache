@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "AQr/5LxhyRs=",
+  "dgSpecHash": "s7lq+hGCXbg=",
   "success": true,
-  "projectFilePath": "/Users/tanya_plesen/git/SemestrVibeCode/Server/Server.csproj",
+  "projectFilePath": "C:\\Users\\matve\\source\\repos\\SemestrVibeCode — копия\\Server\\Server.csproj",
   "expectedPackageFiles": [
-    "/Users/tanya_plesen/.nuget/packages/microsoft.visualstudio.azure.containers.tools.targets/1.23.0/microsoft.visualstudio.azure.containers.tools.targets.1.23.0.nupkg.sha512"
+    "C:\\Users\\matve\\.nuget\\packages\\microsoft.visualstudio.azure.containers.tools.targets\\1.23.0\\microsoft.visualstudio.azure.containers.tools.targets.1.23.0.nupkg.sha512"
   ],
   "logs": []
 }

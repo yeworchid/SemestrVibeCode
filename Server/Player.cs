@@ -74,26 +74,28 @@ public class Player
         foreach (var r in Resources)
         {
             int baseP = GetResourcePoints(r.Key);
-            int finalP = baseP;
+            int pointsPerUnit = baseP;
 
             if (Archetype == ArchetypeType.Greedy)
-                finalP = (int)(baseP * 0.8);
+                pointsPerUnit = (int)(baseP * 0.8);
             else if (Archetype == ArchetypeType.Patron)
-                finalP = (int)(baseP * 1.25);
+                pointsPerUnit = (int)(baseP * 1.25);
             else if (Archetype == ArchetypeType.Engineer)
-                finalP = (int)(baseP * 0.8);
+                pointsPerUnit = (int)(baseP * 0.8);
             else if (Archetype == ArchetypeType.Alchemist)
             {
                 if (r.Key == "Gold" || r.Key == "Emerald")
-                    finalP = (int)(baseP * 1.25);
+                    pointsPerUnit = (int)(baseP * 1.25);
                 else
                 {
-                    finalP = (int)(baseP * 0.7);
-                    if (finalP < 1) finalP = 1;
+                    pointsPerUnit = (int)(baseP * 0.7);
                 }
             }
 
-            pts += finalP * r.Value;
+            // Минимум 1 очко за единицу ресурса (важно для Алхимика)
+            if (pointsPerUnit < 1) pointsPerUnit = 1;
+
+            pts += pointsPerUnit * r.Value;
         }
         return pts;
     }

@@ -7,8 +7,8 @@ namespace Client
     {
         private List<BuildingStateDto> buildings = new List<BuildingStateDto>();
         private int selectedPlace = -1;
-        private const int CellSize = 50;
-        private const int GridSize = 5;
+        private const int CellSize = 80;
+        private const int GridSize = 6;
 
         public event EventHandler<int>? PlaceClicked;
 

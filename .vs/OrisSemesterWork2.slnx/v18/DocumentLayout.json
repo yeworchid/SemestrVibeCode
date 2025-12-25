@@ -1,0 +1,94 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\matve\\source\\repos\\SemestrVibeCode \u2014 \u043A\u043E\u043F\u0438\u044F\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{CA72B62E-ECA8-49F2-9742-BEDA0D77656B}|Client\\Client.csproj|c:\\users\\matve\\source\\repos\\semestrvibecode \u2014 \u043A\u043E\u043F\u0438\u044F\\client\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{CA72B62E-ECA8-49F2-9742-BEDA0D77656B}|Client\\Client.csproj|solutionrelative:client\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CA72B62E-ECA8-49F2-9742-BEDA0D77656B}|Client\\Client.csproj|c:\\users\\matve\\source\\repos\\semestrvibecode \u2014 \u043A\u043E\u043F\u0438\u044F\\client\\gamefieldcontrol.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CA72B62E-ECA8-49F2-9742-BEDA0D77656B}|Client\\Client.csproj|solutionrelative:client\\gamefieldcontrol.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CA72B62E-ECA8-49F2-9742-BEDA0D77656B}|Client\\Client.csproj|c:\\users\\matve\\source\\repos\\semestrvibecode \u2014 \u043A\u043E\u043F\u0438\u044F\\client\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CA72B62E-ECA8-49F2-9742-BEDA0D77656B}|Client\\Client.csproj|solutionrelative:client\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 6,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{75188d03-9892-4ae2-abf1-207126247ce5}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{93c5e7ad-af06-49e6-a756-b8f3eaca790d}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c64b9c2-e352-428e-a56d-0ace190b99a6}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{40ea2e6b-2121-4bb8-a43e-c83c04b51041}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Form1.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
+              "DocumentMoniker": "C:\\Users\\matve\\source\\repos\\SemestrVibeCode \u2014 \u043A\u043E\u043F\u0438\u044F\\Client\\Form1.cs",
+              "RelativeDocumentMoniker": "Client\\Form1.cs",
+              "ToolTip": "C:\\Users\\matve\\source\\repos\\SemestrVibeCode \u2014 \u043A\u043E\u043F\u0438\u044F\\Client\\Form1.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
+              "RelativeToolTip": "Client\\Form1.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-24T16:01:21.458Z",
+              "EditorCaption": " [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "GameFieldControl.cs",
+              "DocumentMoniker": "C:\\Users\\matve\\source\\repos\\SemestrVibeCode \u2014 \u043A\u043E\u043F\u0438\u044F\\Client\\GameFieldControl.cs",
+              "RelativeDocumentMoniker": "Client\\GameFieldControl.cs",
+              "ToolTip": "C:\\Users\\matve\\source\\repos\\SemestrVibeCode \u2014 \u043A\u043E\u043F\u0438\u044F\\Client\\GameFieldControl.cs",
+              "RelativeToolTip": "Client\\GameFieldControl.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-24T15:59:19.773Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Form1.cs",
+              "DocumentMoniker": "C:\\Users\\matve\\source\\repos\\SemestrVibeCode \u2014 \u043A\u043E\u043F\u0438\u044F\\Client\\Form1.cs",
+              "RelativeDocumentMoniker": "Client\\Form1.cs",
+              "ToolTip": "C:\\Users\\matve\\source\\repos\\SemestrVibeCode \u2014 \u043A\u043E\u043F\u0438\u044F\\Client\\Form1.cs",
+              "RelativeToolTip": "Client\\Form1.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAL8AAAAcAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-24T15:58:35.052Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

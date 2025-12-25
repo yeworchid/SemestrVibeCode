@@ -10,3 +10,15 @@
 /Users/tanya_plesen/git/SemestrVibeCode/Common/obj/Debug/net9.0/Common.pdb
 /Users/tanya_plesen/git/SemestrVibeCode/Common/obj/Debug/net9.0/ref/Common.dll
 /Users/tanya_plesen/git/SemestrVibeCode/Common/obj/Debug/net9.0/Common.sourcelink.json
+C:\Users\matve\source\repos\SemestrVibeCode\Common\bin\Debug\net9.0\Common.deps.json
+C:\Users\matve\source\repos\SemestrVibeCode\Common\bin\Debug\net9.0\Common.dll
+C:\Users\matve\source\repos\SemestrVibeCode\Common\bin\Debug\net9.0\Common.pdb
+C:\Users\matve\source\repos\SemestrVibeCode\Common\obj\Debug\net9.0\Common.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\matve\source\repos\SemestrVibeCode\Common\obj\Debug\net9.0\Common.AssemblyInfoInputs.cache
+C:\Users\matve\source\repos\SemestrVibeCode\Common\obj\Debug\net9.0\Common.AssemblyInfo.cs
+C:\Users\matve\source\repos\SemestrVibeCode\Common\obj\Debug\net9.0\Common.csproj.CoreCompileInputs.cache
+C:\Users\matve\source\repos\SemestrVibeCode\Common\obj\Debug\net9.0\Common.sourcelink.json
+C:\Users\matve\source\repos\SemestrVibeCode\Common\obj\Debug\net9.0\Common.dll
+C:\Users\matve\source\repos\SemestrVibeCode\Common\obj\Debug\net9.0\refint\Common.dll
+C:\Users\matve\source\repos\SemestrVibeCode\Common\obj\Debug\net9.0\Common.pdb
+C:\Users\matve\source\repos\SemestrVibeCode\Common\obj\Debug\net9.0\ref\Common.dll

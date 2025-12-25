@@ -18,6 +18,7 @@ namespace Client
         private int soldiers = 0;
         private int defense = 0;
         private int selectedPlace = -1;
+        private bool waitingForResponse = false;
 
         public Form1()
         {
@@ -94,6 +95,12 @@ namespace Client
                 return;
             }
 
+            if (waitingForResponse)
+            {
+                MessageBox.Show("Дождитесь ответа сервера");
+                return;
+            }
+
             if (selectedPlace < 0)
             {
                 MessageBox.Show("Выберите место на поле");
@@ -108,7 +115,7 @@ namespace Client
                     PlaceId = selectedPlace,
                     Type = buildForm.SelectedType
                 };
-                SendMsg(MessageType.BUILD, dto);
+                SendMsgWithWait(MessageType.BUILD, dto);
             }
         }
 
@@ -120,6 +127,12 @@ namespace Client
                 return;
             }
 
+            if (waitingForResponse)
+            {
+                MessageBox.Show("Дождитесь ответа сервера");
+                return;
+            }
+
             if (lstBuildings.SelectedIndex < 0)
             {
                 MessageBox.Show("Выберите здание");
@@ -128,7 +141,7 @@ namespace Client
 
             var b = buildings[lstBuildings.SelectedIndex];
             var dto = new UpgradeRequestDto { PlaceId = b.PlaceId };
-            SendMsg(MessageType.UPGRADE, dto);
+            SendMsgWithWait(MessageType.UPGRADE, dto);
         }
 
         private void BtnMakeSoldiers_Click(object sender, EventArgs e)
@@ -136,6 +149,12 @@ namespace Client
             if (!myTurn)
             {
                 MessageBox.Show("Не ваш ход");
+                return;
+            }
+
+            if (waitingForResponse)
+            {
+                MessageBox.Show("Дождитесь ответа сервера");
                 return;
             }
 
@@ -163,7 +182,7 @@ namespace Client
                     BarracksId = barracks.PlaceId,
                     Count = count
                 };
-                SendMsg(MessageType.MAKE_SOLDIERS, dto);
+                SendMsgWithWait(MessageType.MAKE_SOLDIERS, dto);
             }
         }
 
@@ -172,6 +191,12 @@ namespace Client
             if (!myTurn)
             {
                 MessageBox.Show("Не ваш ход");
+                return;
+            }
+
+            if (waitingForResponse)
+            {
+                MessageBox.Show("Дождитесь ответа сервера");
                 return;
             }
 
@@ -185,7 +210,7 @@ namespace Client
                     ToPlayerId = targetId,
                     Soldiers = count
                 };
-                SendMsg(MessageType.ATTACK, dto);
+                SendMsgWithWait(MessageType.ATTACK, dto);
             }
         }
 
@@ -220,6 +245,20 @@ namespace Client
             {
                 Log("Ошибка: " + ex.Message);
             }
+        }
+
+        private void SendMsgWithWait(MessageType type, object payload)
+        {
+            waitingForResponse = true;
+            lblWaiting.Text = "Ожидание ответа...";
+            lblWaiting.Visible = true;
+            SendMsg(type, payload);
+        }
+
+        private void ClearWaiting()
+        {
+            waitingForResponse = false;
+            lblWaiting.Visible = false;
         }
 
         private void ReceiveLoop()
@@ -261,6 +300,7 @@ namespace Client
                         var resp = MessageDeserializer.Deserialize<ResponseDto>(msg);
                         if (resp != null)
                             Log(resp.Message ?? "");
+                        ClearWaiting();
                         break;
 
                     case MessageType.START_GAME:
@@ -269,7 +309,7 @@ namespace Client
                         {
                             myId = start.PlayerId;
                             Log("Игра началась! Вы игрок " + myId);
-                            
+
                             if (start.Players != null)
                             {
                                 Log("Игроки:");
@@ -278,7 +318,7 @@ namespace Client
                                     Log("  " + pl.Id + ": " + pl.Nickname);
                                 }
                             }
-                            
+
                             cmbArchetype.Visible = true;
                             btnSelectArchetype.Visible = true;
                         }
@@ -353,7 +393,7 @@ namespace Client
                         {
                             string winMsg = "=== ИГРА ОКОНЧЕНА ===\n\n";
                             winMsg += "Результаты:\n";
-                            
+
                             if (end.AllScores != null)
                             {
                                 foreach (var score in end.AllScores)
@@ -361,10 +401,10 @@ namespace Client
                                     winMsg += score.Nickname + ": " + score.Points + " очков\n";
                                 }
                             }
-                            
+
                             winMsg += "\nПобедитель: игрок " + end.WinnerPlayerId;
                             winMsg += "\nОчки победителя: " + end.Points;
-                            
+
                             MessageBox.Show(winMsg, "Конец игры");
                         }
                         break;
