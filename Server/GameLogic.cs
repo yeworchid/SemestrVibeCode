@@ -4,81 +4,81 @@ namespace Server;
 
 public static class GameLogic
 {
-    public static Dictionary<string, int> GetBuildCost(BuildingType type)
+    public static Dictionary<Resources, int> GetBuildCost(BuildingType type)
     {
-        var c = new Dictionary<string, int>();
+        var c = new Dictionary<Resources, int>();
         
-        if (type == BuildingType.Logging) { c["Stone"] = 2; }
-        else if (type == BuildingType.Quarry) { c["Wood"] = 2; }
-        else if (type == BuildingType.Mine) { c["Wood"] = 2; c["Stone"] = 1; }
-        else if (type == BuildingType.Farm) { c["Wood"] = 2; }
-        else if (type == BuildingType.Sawmill) { c["Wood"] = 2; c["Stone"] = 1; }
-        else if (type == BuildingType.Kiln) { c["Stone"] = 2; c["Wood"] = 1; }
-        else if (type == BuildingType.Smelter) { c["Stone"] = 2; c["Ore"] = 2; }
-        else if (type == BuildingType.Charcoal) { c["Wood"] = 2; }
-        else if (type == BuildingType.Crusher) { c["Stone"] = 2; }
-        else if (type == BuildingType.Bakery) { c["Lumber"] = 2; c["Stone"] = 1; }
-        else if (type == BuildingType.Carpentry) { c["Lumber"] = 3; c["Bricks"] = 1; }
-        else if (type == BuildingType.Masonry) { c["Bricks"] = 2; c["Stone"] = 2; }
-        else if (type == BuildingType.Forge) { c["Metal"] = 2; c["Lumber"] = 2; }
-        else if (type == BuildingType.Glassworks) { c["Sand"] = 2; c["Coal"] = 1; c["Bricks"] = 1; }
-        else if (type == BuildingType.Armory) { c["Metal"] = 2; c["Lumber"] = 2; }
-        else if (type == BuildingType.Barracks) { c["Lumber"] = 2; c["Weapon"] = 1; }
-        else if (type == BuildingType.Laboratory) { c["Glass"] = 2; c["Tools"] = 2; c["Coal"] = 1; }
-        else if (type == BuildingType.AlchemyFurnace) { c["Metal"] = 2; c["Coal"] = 2; c["Tools"] = 2; }
-        else if (type == BuildingType.Barricade) { c["Lumber"] = 2; c["Stone"] = 1; }
-        else if (type == BuildingType.DefenseTower) { c["Walls"] = 1; c["Tools"] = 1; c["Weapon"] = 1; }
+        if (type == BuildingType.Logging) { c[Resources.Stone] = 2; }
+        else if (type == BuildingType.Quarry) { c[Resources.Wood] = 2; }
+        else if (type == BuildingType.Mine) { c[Resources.Wood] = 2; c[Resources.Stone] = 1; }
+        else if (type == BuildingType.Farm) { c[Resources.Wood] = 2; }
+        else if (type == BuildingType.Sawmill) { c[Resources.Wood] = 2; c[Resources.Stone] = 1; }
+        else if (type == BuildingType.Kiln) { c[Resources.Stone] = 2; c[Resources.Wood] = 1; }
+        else if (type == BuildingType.Smelter) { c[Resources.Stone] = 2; c[Resources.Ore] = 2; }
+        else if (type == BuildingType.Charcoal) { c[Resources.Wood] = 2; }
+        else if (type == BuildingType.Crusher) { c[Resources.Stone] = 2; }
+        else if (type == BuildingType.Bakery) { c[Resources.Lumber] = 2; c[Resources.Stone] = 1; }
+        else if (type == BuildingType.Carpentry) { c[Resources.Lumber] = 3; c[Resources.Bricks] = 1; }
+        else if (type == BuildingType.Masonry) { c[Resources.Bricks] = 2; c[Resources.Stone] = 2; }
+        else if (type == BuildingType.Forge) { c[Resources.Metal] = 2; c[Resources.Lumber] = 2; }
+        else if (type == BuildingType.Glassworks) { c[Resources.Sand] = 2; c[Resources.Coal] = 1; c[Resources.Bricks] = 1; }
+        else if (type == BuildingType.Armory) { c[Resources.Metal] = 2; c[Resources.Lumber] = 2; }
+        else if (type == BuildingType.Barracks) { c[Resources.Lumber] = 2; c[Resources.Weapon] = 1; }
+        else if (type == BuildingType.Laboratory) { c[Resources.Glass] = 2; c[Resources.Tools] = 2; c[Resources.Coal] = 1; }
+        else if (type == BuildingType.AlchemyFurnace) { c[Resources.Metal] = 2; c[Resources.Coal] = 2; c[Resources.Tools] = 2; }
+        else if (type == BuildingType.Barricade) { c[Resources.Lumber] = 2; c[Resources.Stone] = 1; }
+        else if (type == BuildingType.DefenseTower) { c[Resources.Walls] = 1; c[Resources.Tools] = 1; c[Resources.Weapon] = 1; }
         
         return c;
     }
 
-    public static Dictionary<string, int> GetUpgradeCost(BuildingType type, int toLevel)
+    public static Dictionary<Resources, int> GetUpgradeCost(BuildingType type, int toLevel)
     {
-        var c = new Dictionary<string, int>();
+        var c = new Dictionary<Resources, int>();
         
         if (toLevel == 2)
         {
-            if (type == BuildingType.Logging) { c["Stone"] = 1; c["Lumber"] = 1; }
-            else if (type == BuildingType.Quarry) { c["Wood"] = 1; c["Bricks"] = 1; }
-            else if (type == BuildingType.Mine) { c["Bricks"] = 2; }
-            else if (type == BuildingType.Farm) { c["Wood"] = 1; c["Lumber"] = 1; }
-            else if (type == BuildingType.Sawmill) { c["Lumber"] = 2; }
-            else if (type == BuildingType.Kiln) { c["Bricks"] = 2; }
-            else if (type == BuildingType.Smelter) { c["Metal"] = 1; c["Bricks"] = 1; }
-            else if (type == BuildingType.Charcoal) { c["Lumber"] = 1; c["Wood"] = 1; }
-            else if (type == BuildingType.Crusher) { c["Bricks"] = 1; c["Stone"] = 1; }
-            else if (type == BuildingType.Bakery) { c["Bread"] = 1; c["Lumber"] = 1; }
-            else if (type == BuildingType.Carpentry) { c["Furniture"] = 2; }
-            else if (type == BuildingType.Masonry) { c["Walls"] = 1; c["Bricks"] = 1; }
-            else if (type == BuildingType.Forge) { c["Tools"] = 1; c["Metal"] = 1; }
-            else if (type == BuildingType.Glassworks) { c["Glass"] = 1; c["Sand"] = 1; }
-            else if (type == BuildingType.Armory) { c["Weapon"] = 1; c["Metal"] = 1; }
-            else if (type == BuildingType.Barracks) { c["Walls"] = 1; c["Bread"] = 1; }
-            else if (type == BuildingType.Laboratory) { c["Emerald"] = 1; c["Glass"] = 1; }
-            else if (type == BuildingType.AlchemyFurnace) { c["Gold"] = 1; c["Metal"] = 1; }
-            else if (type == BuildingType.Barricade) { c["Metal"] = 1; }
-            else if (type == BuildingType.DefenseTower) { c["Weapon"] = 3; }
+            if (type == BuildingType.Logging) { c[Resources.Stone] = 1; c[Resources.Lumber] = 1; }
+            else if (type == BuildingType.Quarry) { c[Resources.Wood] = 1; c[Resources.Bricks] = 1; }
+            else if (type == BuildingType.Mine) { c[Resources.Bricks] = 2; }
+            else if (type == BuildingType.Farm) { c[Resources.Wood] = 1; c[Resources.Lumber] = 1; }
+            else if (type == BuildingType.Sawmill) { c[Resources.Lumber] = 2; }
+            else if (type == BuildingType.Kiln) { c[Resources.Bricks] = 2; }
+            else if (type == BuildingType.Smelter) { c[Resources.Metal] = 1; c[Resources.Bricks] = 1; }
+            else if (type == BuildingType.Charcoal) { c[Resources.Lumber] = 1; c[Resources.Wood] = 1; }
+            else if (type == BuildingType.Crusher) { c[Resources.Bricks] = 1; c[Resources.Stone] = 1; }
+            else if (type == BuildingType.Bakery) { c[Resources.Bread] = 1; c[Resources.Lumber] = 1; }
+            else if (type == BuildingType.Carpentry) { c[Resources.Furniture] = 2; }
+            else if (type == BuildingType.Masonry) { c[Resources.Walls] = 1; c[Resources.Bricks] = 1; }
+            else if (type == BuildingType.Forge) { c[Resources.Tools] = 1; c[Resources.Metal] = 1; }
+            else if (type == BuildingType.Glassworks) { c[Resources.Glass] = 1; c[Resources.Sand] = 1; }
+            else if (type == BuildingType.Armory) { c[Resources.Weapon] = 1; c[Resources.Metal] = 1; }
+            else if (type == BuildingType.Barracks) { c[Resources.Walls] = 1; c[Resources.Bread] = 1; }
+            else if (type == BuildingType.Laboratory) { c[Resources.Emerald] = 1; c[Resources.Glass] = 1; }
+            else if (type == BuildingType.AlchemyFurnace) { c[Resources.Gold] = 1; c[Resources.Metal] = 1; }
+            else if (type == BuildingType.Barricade) { c[Resources.Metal] = 1; }
+            else if (type == BuildingType.DefenseTower) { c[Resources.Weapon] = 3; }
         }
         else if (toLevel == 3)
         {
-            if (type == BuildingType.Logging) { c["Lumber"] = 2; c["Bricks"] = 1; }
-            else if (type == BuildingType.Quarry) { c["Bricks"] = 2; c["Lumber"] = 1; }
-            else if (type == BuildingType.Mine) { c["Walls"] = 1; c["Tools"] = 1; }
-            else if (type == BuildingType.Farm) { c["Lumber"] = 2; c["Bread"] = 1; }
-            else if (type == BuildingType.Sawmill) { c["Bricks"] = 1; c["Lumber"] = 2; }
-            else if (type == BuildingType.Kiln) { c["Walls"] = 1; c["Lumber"] = 1; }
-            else if (type == BuildingType.Smelter) { c["Metal"] = 2; c["Walls"] = 1; }
-            else if (type == BuildingType.Charcoal) { c["Lumber"] = 2; c["Coal"] = 1; }
-            else if (type == BuildingType.Crusher) { c["Bricks"] = 2; c["Sand"] = 1; }
-            else if (type == BuildingType.Bakery) { c["Bread"] = 2; c["Bricks"] = 1; }
-            else if (type == BuildingType.Carpentry) { c["Furniture"] = 1; c["Walls"] = 1; }
-            else if (type == BuildingType.Masonry) { c["Walls"] = 2; c["Tools"] = 1; }
-            else if (type == BuildingType.Forge) { c["Tools"] = 2; c["Walls"] = 1; }
-            else if (type == BuildingType.Glassworks) { c["Glass"] = 2; c["Tools"] = 1; }
-            else if (type == BuildingType.Armory) { c["Weapon"] = 2; c["Tools"] = 1; }
-            else if (type == BuildingType.Barracks) { c["Weapon"] = 1; c["Walls"] = 1; c["Bread"] = 1; }
-            else if (type == BuildingType.Laboratory) { c["Emerald"] = 2; c["Tools"] = 1; }
-            else if (type == BuildingType.AlchemyFurnace) { c["Gold"] = 2; c["Tools"] = 1; }
+            if (type == BuildingType.Logging) { c[Resources.Lumber] = 2; c[Resources.Bricks] = 1; }
+            else if (type == BuildingType.Quarry) { c[Resources.Bricks] = 2; c[Resources.Lumber] = 1; }
+            else if (type == BuildingType.Mine) { c[Resources.Walls] = 1; c[Resources.Tools] = 1; }
+            else if (type == BuildingType.Farm) { c[Resources.Lumber] = 2; c[Resources.Bread] = 1; }
+            else if (type == BuildingType.Sawmill) { c[Resources.Bricks] = 1; c[Resources.Lumber] = 2; }
+            else if (type == BuildingType.Kiln) { c[Resources.Walls] = 1; c[Resources.Lumber] = 1; }
+            else if (type == BuildingType.Smelter) { c[Resources.Metal] = 2; c[Resources.Walls] = 1; }
+            else if (type == BuildingType.Charcoal) { c[Resources.Lumber] = 2; c[Resources.Coal] = 1; }
+            else if (type == BuildingType.Crusher) { c[Resources.Bricks] = 2; c[Resources.Sand] = 1; }
+            else if (type == BuildingType.Bakery) { c[Resources.Bread] = 2; c[Resources.Bricks] = 1; }
+            else if (type == BuildingType.Carpentry) { c[Resources.Furniture] = 1; c[Resources.Walls] = 1; }
+            else if (type == BuildingType.Masonry) { c[Resources.Walls] = 2; c[Resources.Tools] = 1; }
+            else if (type == BuildingType.Forge) { c[Resources.Tools] = 2; c[Resources.Walls] = 1; }
+            else if (type == BuildingType.Glassworks) { c[Resources.Glass] = 2; c[Resources.Tools] = 1; }
+            else if (type == BuildingType.Armory) { c[Resources.Weapon] = 2; c[Resources.Tools] = 1; }
+            else if (type == BuildingType.Barracks) { c[Resources.Weapon] = 1; c[Resources.Walls] = 1; c[Resources.Bread] = 1; }
+            else if (type == BuildingType.Laboratory) { c[Resources.Emerald] = 2; c[Resources.Tools] = 1; }
+            else if (type == BuildingType.AlchemyFurnace) { c[Resources.Gold] = 2; c[Resources.Tools] = 1; }
         }
         
         return c;
@@ -129,50 +129,50 @@ public static class GameLogic
         return 0;
     }
 
-    public static string GetProducerOutput(BuildingType type)
+    public static Resources GetProducerOutput(BuildingType type)
     {
-        if (type == BuildingType.Logging) return "Wood";
-        if (type == BuildingType.Quarry) return "Stone";
-        if (type == BuildingType.Mine) return "Ore";
-        if (type == BuildingType.Farm) return "Wheat";
-        return "";
+        if (type == BuildingType.Logging) return Resources.Wood;
+        if (type == BuildingType.Quarry) return Resources.Stone;
+        if (type == BuildingType.Mine) return Resources.Ore;
+        if (type == BuildingType.Farm) return Resources.Wheat;
+        return Resources.Wood; // default
     }
 
-    public static string GetProcessorOutput(BuildingType type)
+    public static Resources GetProcessorOutput(BuildingType type)
     {
-        if (type == BuildingType.Sawmill) return "Lumber";
-        if (type == BuildingType.Kiln) return "Bricks";
-        if (type == BuildingType.Smelter) return "Metal";
-        if (type == BuildingType.Charcoal) return "Coal";
-        if (type == BuildingType.Crusher) return "Sand";
-        if (type == BuildingType.Bakery) return "Bread";
-        if (type == BuildingType.Carpentry) return "Furniture";
-        if (type == BuildingType.Masonry) return "Walls";
-        if (type == BuildingType.Forge) return "Tools";
-        if (type == BuildingType.Glassworks) return "Glass";
-        if (type == BuildingType.Armory) return "Weapon";
-        if (type == BuildingType.Laboratory) return "Emerald";
-        if (type == BuildingType.AlchemyFurnace) return "Gold";
-        return "";
+        if (type == BuildingType.Sawmill) return Resources.Lumber;
+        if (type == BuildingType.Kiln) return Resources.Bricks;
+        if (type == BuildingType.Smelter) return Resources.Metal;
+        if (type == BuildingType.Charcoal) return Resources.Coal;
+        if (type == BuildingType.Crusher) return Resources.Sand;
+        if (type == BuildingType.Bakery) return Resources.Bread;
+        if (type == BuildingType.Carpentry) return Resources.Furniture;
+        if (type == BuildingType.Masonry) return Resources.Walls;
+        if (type == BuildingType.Forge) return Resources.Tools;
+        if (type == BuildingType.Glassworks) return Resources.Glass;
+        if (type == BuildingType.Armory) return Resources.Weapon;
+        if (type == BuildingType.Laboratory) return Resources.Emerald;
+        if (type == BuildingType.AlchemyFurnace) return Resources.Gold;
+        return Resources.Wood; // default
     }
 
-    public static Dictionary<string, int> GetProcessorInput(BuildingType type)
+    public static Dictionary<Resources, int> GetProcessorInput(BuildingType type)
     {
-        var inp = new Dictionary<string, int>();
+        var inp = new Dictionary<Resources, int>();
         
-        if (type == BuildingType.Sawmill) { inp["Wood"] = 2; }
-        else if (type == BuildingType.Kiln) { inp["Stone"] = 2; }
-        else if (type == BuildingType.Smelter) { inp["Ore"] = 3; }
-        else if (type == BuildingType.Charcoal) { inp["Wood"] = 2; }
-        else if (type == BuildingType.Crusher) { inp["Stone"] = 2; }
-        else if (type == BuildingType.Bakery) { inp["Wheat"] = 2; inp["Wood"] = 1; }
-        else if (type == BuildingType.Carpentry) { inp["Lumber"] = 3; }
-        else if (type == BuildingType.Masonry) { inp["Bricks"] = 2; inp["Stone"] = 1; }
-        else if (type == BuildingType.Forge) { inp["Metal"] = 2; inp["Wood"] = 1; }
-        else if (type == BuildingType.Glassworks) { inp["Sand"] = 2; inp["Coal"] = 1; }
-        else if (type == BuildingType.Armory) { inp["Metal"] = 2; inp["Lumber"] = 1; }
-        else if (type == BuildingType.Laboratory) { inp["Glass"] = 2; inp["Coal"] = 1; inp["Tools"] = 1; }
-        else if (type == BuildingType.AlchemyFurnace) { inp["Metal"] = 2; inp["Coal"] = 2; inp["Tools"] = 1; }
+        if (type == BuildingType.Sawmill) { inp[Resources.Wood] = 2; }
+        else if (type == BuildingType.Kiln) { inp[Resources.Stone] = 2; }
+        else if (type == BuildingType.Smelter) { inp[Resources.Ore] = 3; }
+        else if (type == BuildingType.Charcoal) { inp[Resources.Wood] = 2; }
+        else if (type == BuildingType.Crusher) { inp[Resources.Stone] = 2; }
+        else if (type == BuildingType.Bakery) { inp[Resources.Wheat] = 2; inp[Resources.Wood] = 1; }
+        else if (type == BuildingType.Carpentry) { inp[Resources.Lumber] = 3; }
+        else if (type == BuildingType.Masonry) { inp[Resources.Bricks] = 2; inp[Resources.Stone] = 1; }
+        else if (type == BuildingType.Forge) { inp[Resources.Metal] = 2; inp[Resources.Wood] = 1; }
+        else if (type == BuildingType.Glassworks) { inp[Resources.Sand] = 2; inp[Resources.Coal] = 1; }
+        else if (type == BuildingType.Armory) { inp[Resources.Metal] = 2; inp[Resources.Lumber] = 1; }
+        else if (type == BuildingType.Laboratory) { inp[Resources.Glass] = 2; inp[Resources.Coal] = 1; inp[Resources.Tools] = 1; }
+        else if (type == BuildingType.AlchemyFurnace) { inp[Resources.Metal] = 2; inp[Resources.Coal] = 2; inp[Resources.Tools] = 1; }
         
         return inp;
     }
@@ -194,29 +194,29 @@ public static class GameLogic
                type == BuildingType.AlchemyFurnace;
     }
 
-    public static Dictionary<string, int> GetSoldierCost(ArchetypeType arch)
+    public static Dictionary<Resources, int> GetSoldierCost(ArchetypeType arch)
     {
-        var c = new Dictionary<string, int>();
+        var c = new Dictionary<Resources, int>();
         
         if (arch == ArchetypeType.Warrior)
         {
-            c["Bread"] = 5;
-            c["Weapon"] = 2;
+            c[Resources.Bread] = 5;
+            c[Resources.Weapon] = 2;
         }
         else if (arch == ArchetypeType.Recruit)
         {
-            c["Bread"] = 1;
-            c["Weapon"] = 1;
+            c[Resources.Bread] = 1;
+            c[Resources.Weapon] = 1;
         }
         else if (arch == ArchetypeType.Glutton)
         {
-            c["Bread"] = 6;
-            c["Weapon"] = 1;
+            c[Resources.Bread] = 6;
+            c[Resources.Weapon] = 1;
         }
         else
         {
-            c["Bread"] = 3;
-            c["Weapon"] = 1;
+            c[Resources.Bread] = 3;
+            c[Resources.Weapon] = 1;
         }
         
         return c;

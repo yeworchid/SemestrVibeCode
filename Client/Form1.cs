@@ -362,7 +362,10 @@ namespace Client
                         {
                             string prodStr = "";
                             foreach (var r in prod.ProducedResources)
-                                prodStr += r.Key + ":" + r.Value + " ";
+                            {
+                                string name = ResourceNames.GetRussianName(r.Key);
+                                prodStr += name + ":" + r.Value + " ";
+                            }
                             Log("Произведено: " + prodStr);
                         }
                         break;
@@ -375,7 +378,10 @@ namespace Client
                             if (atk.StolenResources != null)
                             {
                                 foreach (var r in atk.StolenResources)
-                                    stolenStr += r.Key + ":" + r.Value + " ";
+                                {
+                                    string name = ResourceNames.GetRussianName(r.Key);
+                                    stolenStr += name + ":" + r.Value + " ";
+                                }
                             }
                             Log("Атака: отправлено " + atk.Sent + ", потеряно " + atk.Lost + ", украдено: " + stolenStr);
                             AnimateAttack();
@@ -390,7 +396,10 @@ namespace Client
                             if (atkRecv.LostResources != null)
                             {
                                 foreach (var r in atkRecv.LostResources)
-                                    lostStr += r.Key + ":" + r.Value + " ";
+                                {
+                                    string name = ResourceNames.GetRussianName(r.Key);
+                                    lostStr += name + ":" + r.Value + " ";
+                                }
                             }
                             Log("!!! ВАС АТАКОВАЛ " + atkRecv.FromNickname + " !!!");
                             Log("Солдат атаковало: " + atkRecv.SoldiersAttacked + ", уничтожено: " + atkRecv.SoldiersLost);
@@ -439,7 +448,10 @@ namespace Client
 
             string resStr = "Ресурсы:\n";
             foreach (var r in resources)
-                resStr += r.Key + ": " + r.Value + "\n";
+            {
+                string name = ResourceNames.GetRussianName(r.Key);
+                resStr += name + ": " + r.Value + "\n";
+            }
             resStr += "\nСолдаты: " + soldiers;
             resStr += "\nЗащита: " + defense + "%";
             lblResources.Text = resStr;

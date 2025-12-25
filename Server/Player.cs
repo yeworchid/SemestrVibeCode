@@ -12,36 +12,37 @@ public class Player
     public NetworkStream Stream = null!;
     public ArchetypeType Archetype = ArchetypeType.Neutral;
     
-    public Dictionary<string, int> Resources = new Dictionary<string, int>();
+    public Dictionary<Resources, int> ResourceStorage = new Dictionary<Resources, int>();
     public List<Building> Buildings = new List<Building>();
     public int Soldiers = 0;
     public int SoldiersCreatedThisTurn = 0;
+    public HashSet<int> AttackedPlayersThisTurn = new HashSet<int>();
 
     public void InitResources()
     {
-        Resources["Wood"] = 10;
-        Resources["Stone"] = 10;
-        Resources["Ore"] = 5;
-        Resources["Wheat"] = 8;
+        ResourceStorage[Resources.Wood] = 10;
+        ResourceStorage[Resources.Stone] = 10;
+        ResourceStorage[Resources.Ore] = 5;
+        ResourceStorage[Resources.Wheat] = 8;
     }
 
-    public bool HasResource(string name, int amount)
+    public bool HasResource(Resources res, int amount)
     {
-        if (!Resources.ContainsKey(name)) return false;
-        return Resources[name] >= amount;
+        if (!ResourceStorage.ContainsKey(res)) return false;
+        return ResourceStorage[res] >= amount;
     }
 
-    public void AddResource(string name, int amount)
+    public void AddResource(Resources res, int amount)
     {
-        if (!Resources.ContainsKey(name))
-            Resources[name] = 0;
-        Resources[name] += amount;
+        if (!ResourceStorage.ContainsKey(res))
+            ResourceStorage[res] = 0;
+        ResourceStorage[res] += amount;
     }
 
-    public void RemoveResource(string name, int amount)
+    public void RemoveResource(Resources res, int amount)
     {
-        if (Resources.ContainsKey(name))
-            Resources[name] -= amount;
+        if (ResourceStorage.ContainsKey(res))
+            ResourceStorage[res] -= amount;
     }
 
     public int GetDefense()
@@ -85,7 +86,7 @@ public class Player
     public int CalcPoints()
     {
         int pts = 0;
-        foreach (var r in Resources)
+        foreach (var r in ResourceStorage)
         {
             int baseP = GetResourcePoints(r.Key);
             int pointsPerUnit = baseP;
@@ -98,7 +99,7 @@ public class Player
                 pointsPerUnit = (int)(baseP * 0.8);
             else if (Archetype == ArchetypeType.Alchemist)
             {
-                if (r.Key == "Gold" || r.Key == "Emerald")
+                if (r.Key == Resources.Gold || r.Key == Resources.Emerald)
                     pointsPerUnit = (int)(baseP * 1.25);
                 else
                 {
@@ -114,15 +115,15 @@ public class Player
         return pts;
     }
 
-    private int GetResourcePoints(string name)
+    private int GetResourcePoints(Resources res)
     {
-        if (name == "Wood" || name == "Stone" || name == "Ore" || name == "Wheat")
+        if (res == Resources.Wood || res == Resources.Stone || res == Resources.Ore || res == Resources.Wheat)
             return 1;
-        if (name == "Lumber" || name == "Bricks" || name == "Metal" || name == "Coal" || name == "Sand" || name == "Bread")
+        if (res == Resources.Lumber || res == Resources.Bricks || res == Resources.Metal || res == Resources.Coal || res == Resources.Sand || res == Resources.Bread)
             return 3;
-        if (name == "Furniture" || name == "Walls" || name == "Tools" || name == "Glass" || name == "Weapon")
+        if (res == Resources.Furniture || res == Resources.Walls || res == Resources.Tools || res == Resources.Glass || res == Resources.Weapon)
             return 8;
-        if (name == "Gold" || name == "Emerald")
+        if (res == Resources.Gold || res == Resources.Emerald)
             return 25;
         return 0;
     }

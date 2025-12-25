@@ -151,7 +151,7 @@ public class GameServer
                 bool allReady = true;
                 foreach (var pl in players)
                 {
-                    if (pl.Resources.Count == 0)
+                    if (pl.ResourceStorage.Count == 0)
                     {
                         allReady = false;
                         break;
@@ -220,8 +220,9 @@ public class GameServer
         var p = players.Find(x => x.Id == pid);
         if (p == null) return;
 
-        // Сброс счётчика солдат за ход
+        // Сброс счётчиков за ход
         p.SoldiersCreatedThisTurn = 0;
+        p.AttackedPlayersThisTurn.Clear();
 
         Console.WriteLine($"=== Ход игрока {p.Nickname} (цикл {cycle}, ход {globalTurn}) ===");
 
@@ -245,14 +246,14 @@ public class GameServer
 
     private void DoProduction(Player p)
     {
-        var produced = new Dictionary<string, int>();
+        var produced = new Dictionary<Resources, int>();
 
         var sorted = p.Buildings.OrderBy(b => b.PlaceId).ToList();
         foreach (var b in sorted)
         {
             if (GameLogic.IsProducer(b.Type))
             {
-                string res = GameLogic.GetProducerOutput(b.Type);
+                Resources res = GameLogic.GetProducerOutput(b.Type);
                 int amt = GameLogic.GetProduction(b.Type, b.Level);
                 p.AddResource(res, amt);
 
@@ -262,7 +263,7 @@ public class GameServer
             }
         }
 
-        var dto = new ProductionResultDto { ProducedResources = produced };
+        var dto = new ProductionResultDto { ProducedResources = produced.ToDictionary(x => x.Key.ToString(), x => x.Value) };
         SendMsg(p, MessageType.PRODUCTION_RESULT, dto);
     }
 
@@ -274,7 +275,7 @@ public class GameServer
             if (GameLogic.IsProcessor(b.Type))
             {
                 var input = GameLogic.GetProcessorInput(b.Type);
-                string output = GameLogic.GetProcessorOutput(b.Type);
+                Resources output = GameLogic.GetProcessorOutput(b.Type);
                 int maxTimes = GameLogic.GetProduction(b.Type, b.Level);
 
                 for (int i = 0; i < maxTimes; i++)
@@ -347,7 +348,7 @@ public class GameServer
             int refund = rnd.Next(1, 3);
             for (int i = 0; i < refund && costList.Count > 0; i++)
             {
-                string res = costList[rnd.Next(costList.Count)];
+                Resources res = costList[rnd.Next(costList.Count)];
                 p.AddResource(res, 1);
                 Console.WriteLine($"[{p.Nickname}] Инженер: возврат 1 {res}");
             }
@@ -486,6 +487,14 @@ public class GameServer
             return;
         }
 
+        // Проверка: можно атаковать каждого игрока только 1 раз за ход
+        if (p.AttackedPlayersThisTurn.Contains(target.Id))
+        {
+            Console.WriteLine($"[{p.Nickname}] Отказ: уже атаковал {target.Nickname} в этот ход");
+            SendResponse(p, false, "Вы уже атаковали этого игрока в этот ход");
+            return;
+        }
+
         if (p.Soldiers < dto.Soldiers)
         {
             Console.WriteLine($"[{p.Nickname}] Отказ: недостаточно солдат ({p.Soldiers} < {dto.Soldiers})");
@@ -494,6 +503,7 @@ public class GameServer
         }
 
         p.Soldiers -= dto.Soldiers;
+        p.AttackedPlayersThisTurn.Add(target.Id);
 
         int defense = target.GetDefense();
         int originalDefense = defense;
@@ -509,15 +519,15 @@ public class GameServer
 
         Console.WriteLine($"[{p.Nickname}] Атака на {target.Nickname}: оборона {originalDefense}% -> {defense}%, потери {lost}, выжило {survived}");
 
-        var stolen = new Dictionary<string, int>();
+        var stolen = new Dictionary<Resources, int>();
         int stealsPerSoldier = 1;
         if (p.Archetype == ArchetypeType.Glutton)
             stealsPerSoldier = 2;
 
         for (int i = 0; i < survived * stealsPerSoldier; i++)
         {
-            var available = new List<string>();
-            foreach (var r in target.Resources)
+            var available = new List<Resources>();
+            foreach (var r in target.ResourceStorage)
             {
                 if (r.Value > 0)
                     available.Add(r.Key);
@@ -525,7 +535,7 @@ public class GameServer
 
             if (available.Count > 0)
             {
-                string res = available[rnd.Next(available.Count)];
+                Resources res = available[rnd.Next(available.Count)];
                 target.RemoveResource(res, 1);
                 
                 if (!stolen.ContainsKey(res))
@@ -542,13 +552,16 @@ public class GameServer
         string stolenStr = string.Join(", ", stolen.Select(x => $"{x.Key}:{x.Value}"));
         Console.WriteLine($"[{p.Nickname}] Украдено: {stolenStr}");
 
+        // Конвертируем в string для DTO
+        var stolenStrDict = stolen.ToDictionary(x => x.Key.ToString(), x => x.Value);
+
         // Уведомление атакующему
         var attackDto = new AttackTargetDto
         {
             ToPlayerId = dto.ToPlayerId,
             Sent = dto.Soldiers,
             Lost = lost,
-            StolenResources = stolen
+            StolenResources = stolenStrDict
         };
         SendMsg(p, MessageType.ATTACK_TARGET, attackDto);
 
@@ -559,7 +572,7 @@ public class GameServer
             FromNickname = p.Nickname,
             SoldiersAttacked = dto.Soldiers,
             SoldiersLost = lost,
-            LostResources = stolen
+            LostResources = stolenStrDict
         };
         SendMsg(target, MessageType.ATTACK_RECEIVED, receivedDto);
 
@@ -661,7 +674,7 @@ public class GameServer
 
         var dto = new StateDto
         {
-            Resources = new Dictionary<string, int>(p.Resources),
+            Resources = p.ResourceStorage.ToDictionary(x => x.Key.ToString(), x => x.Value),
             Soldiers = p.Soldiers,
             Defense = p.GetDefense(),
             Buildings = buildings
