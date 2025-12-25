@@ -9,7 +9,8 @@ public enum MessageType : byte
     PRODUCTION_RESULT, // s->c
     MAKE_SOLDIERS,     // c->s
     ATTACK,            // c->s
-    ATTACK_TARGET,     // s->c
+    ATTACK_TARGET,     // s->c (атакующему)
+    ATTACK_RECEIVED,   // s->c (атакуемому)
     BUILD,             // c->s
     UPGRADE,           // c->s
     END_TURN,          // c->s

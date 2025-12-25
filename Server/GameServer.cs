@@ -542,6 +542,7 @@ public class GameServer
         string stolenStr = string.Join(", ", stolen.Select(x => $"{x.Key}:{x.Value}"));
         Console.WriteLine($"[{p.Nickname}] Украдено: {stolenStr}");
 
+        // Уведомление атакующему
         var attackDto = new AttackTargetDto
         {
             ToPlayerId = dto.ToPlayerId,
@@ -550,7 +551,23 @@ public class GameServer
             StolenResources = stolen
         };
         SendMsg(p, MessageType.ATTACK_TARGET, attackDto);
+
+        // Уведомление атакуемому
+        var receivedDto = new AttackReceivedDto
+        {
+            FromPlayerId = p.Id,
+            FromNickname = p.Nickname,
+            SoldiersAttacked = dto.Soldiers,
+            SoldiersLost = lost,
+            LostResources = stolen
+        };
+        SendMsg(target, MessageType.ATTACK_RECEIVED, receivedDto);
+
+        // Отправляем RESPONSE чтобы сбросить флаг ожидания
+        SendResponse(p, true, "Атака выполнена");
+        
         SendState(p);
+        SendState(target);
     }
 
     private void DoEndTurn(Player p)

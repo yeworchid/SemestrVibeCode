@@ -382,6 +382,23 @@ namespace Client
                         }
                         break;
 
+                    case MessageType.ATTACK_RECEIVED:
+                        var atkRecv = MessageDeserializer.Deserialize<AttackReceivedDto>(msg);
+                        if (atkRecv != null)
+                        {
+                            string lostStr = "";
+                            if (atkRecv.LostResources != null)
+                            {
+                                foreach (var r in atkRecv.LostResources)
+                                    lostStr += r.Key + ":" + r.Value + " ";
+                            }
+                            Log("!!! ВАС АТАКОВАЛ " + atkRecv.FromNickname + " !!!");
+                            Log("Солдат атаковало: " + atkRecv.SoldiersAttacked + ", уничтожено: " + atkRecv.SoldiersLost);
+                            Log("Потеряно ресурсов: " + lostStr);
+                            AnimateAttack();
+                        }
+                        break;
+
                     case MessageType.TURN_ENDED:
                         var ended = MessageDeserializer.Deserialize<TurnEndedDto>(msg);
                         if (ended != null)
