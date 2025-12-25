@@ -31,12 +31,15 @@ public class GameServer
     {
         listener = new TcpListener(IPAddress.Any, port);
         listener.Start();
-        Console.WriteLine("Сервер запущен на порту " + port);
+        Console.WriteLine("╔════════════════════════════════════════════╗");
+        Console.WriteLine("║   ⚔️ БОЙЦЫ ХЛОПКОВЫХ ПЛАНТАЦИЙ 2 ⚔️        ║");
+        Console.WriteLine("║          Сервер запущен на порту " + port + "       ║");
+        Console.WriteLine("╚════════════════════════════════════════════╝");
 
         while (true)
         {
             var client = listener.AcceptTcpClient();
-            Console.WriteLine("Клиент подключился");
+            Console.WriteLine("🎮 Боец подключился к плантации!");
             Task.Run(() => HandleClient(client));
         }
     }
@@ -112,7 +115,7 @@ public class GameServer
     private void StartGame()
     {
         gameStarted = true;
-        Console.WriteLine("Игра начинается!");
+        Console.WriteLine("🌾 БИТВА НА ПЛАНТАЦИИ НАЧИНАЕТСЯ! 🌾");
 
         var playerInfos = new List<PlayerInfoDto>();
         foreach (var pl in players)
@@ -656,7 +659,7 @@ public class GameServer
             SendMsg(p, MessageType.GAME_END, dto);
         }
 
-        Console.WriteLine("Игра окончена! Победитель: " + (winner?.Nickname ?? "никто"));
+        Console.WriteLine("🏆 БИТВА ОКОНЧЕНА! Победитель плантации: " + (winner?.Nickname ?? "никто") + " 🏆");
     }
 
     private void SendState(Player p)

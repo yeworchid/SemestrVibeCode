@@ -21,6 +21,9 @@
         private TextBox txtLog;
         private GameFieldControl gameField;
         private Label lblWaiting;
+        private Label lblTitle;
+        private Label lblPlayersTitle;
+        private ListBox lstPlayers;
 
         protected override void Dispose(bool disposing)
         {
@@ -51,8 +54,22 @@
             btnEndTurn = new Button();
             txtLog = new TextBox();
             lblWaiting = new Label();
+            lblTitle = new Label();
+            lblPlayersTitle = new Label();
+            lstPlayers = new ListBox();
             pnlGame.SuspendLayout();
             SuspendLayout();
+            // 
+            // lblTitle
+            // 
+            lblTitle.AutoSize = true;
+            lblTitle.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+            lblTitle.ForeColor = Color.DarkGreen;
+            lblTitle.Location = new Point(680, 15);
+            lblTitle.Name = "lblTitle";
+            lblTitle.Size = new Size(380, 30);
+            lblTitle.TabIndex = 6;
+            lblTitle.Text = "⚔️ Бойцы хлопковых плантаций 2 ⚔️";
             // 
             // txtNickname
             // 
@@ -76,13 +93,13 @@
             btnConnect.Name = "btnConnect";
             btnConnect.Size = new Size(200, 35);
             btnConnect.TabIndex = 2;
-            btnConnect.Text = "Подключиться";
+            btnConnect.Text = "В бой!";
             btnConnect.Click += BtnConnect_Click;
             // 
             // cmbArchetype
             // 
             cmbArchetype.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbArchetype.Location = new Point(960, 20);
+            cmbArchetype.Location = new Point(960, 50);
             cmbArchetype.Name = "cmbArchetype";
             cmbArchetype.Size = new Size(200, 38);
             cmbArchetype.TabIndex = 3;
@@ -90,7 +107,7 @@
             // 
             // btnSelectArchetype
             // 
-            btnSelectArchetype.Location = new Point(1180, 20);
+            btnSelectArchetype.Location = new Point(1180, 50);
             btnSelectArchetype.Name = "btnSelectArchetype";
             btnSelectArchetype.Size = new Size(220, 35);
             btnSelectArchetype.TabIndex = 4;
@@ -113,15 +130,17 @@
             pnlGame.Controls.Add(btnAttack);
             pnlGame.Controls.Add(btnEndTurn);
             pnlGame.Controls.Add(txtLog);
-            pnlGame.Location = new Point(20, 80);
+            pnlGame.Controls.Add(lblPlayersTitle);
+            pnlGame.Controls.Add(lstPlayers);
+            pnlGame.Location = new Point(20, 90);
             pnlGame.Name = "pnlGame";
-            pnlGame.Size = new Size(1380, 748);
+            pnlGame.Size = new Size(1380, 738);
             pnlGame.TabIndex = 5;
             pnlGame.Visible = false;
             // 
             // lblCycle
             // 
-            lblCycle.Location = new Point(10, 27);
+            lblCycle.Location = new Point(10, 10);
             lblCycle.Name = "lblCycle";
             lblCycle.Size = new Size(166, 32);
             lblCycle.TabIndex = 0;
@@ -129,7 +148,7 @@
             // 
             // lblTurn
             // 
-            lblTurn.Location = new Point(10, 59);
+            lblTurn.Location = new Point(10, 42);
             lblTurn.Name = "lblTurn";
             lblTurn.Size = new Size(166, 39);
             lblTurn.TabIndex = 1;
@@ -137,7 +156,7 @@
             // 
             // gameField
             // 
-            gameField.Location = new Point(10, 101);
+            gameField.Location = new Point(10, 84);
             gameField.Name = "gameField";
             gameField.Size = new Size(400, 400);
             gameField.TabIndex = 2;
@@ -147,15 +166,15 @@
             // 
             lblResources.Location = new Point(439, 10);
             lblResources.Name = "lblResources";
-            lblResources.Size = new Size(297, 710);
+            lblResources.Size = new Size(297, 480);
             lblResources.TabIndex = 3;
             lblResources.Text = "Ресурсы:";
             // 
             // lstBuildings
             // 
-            lstBuildings.Location = new Point(10, 506);
+            lstBuildings.Location = new Point(10, 490);
             lstBuildings.Name = "lstBuildings";
-            lstBuildings.Size = new Size(409, 214);
+            lstBuildings.Size = new Size(409, 230);
             lstBuildings.TabIndex = 4;
             // 
             // btnBuild
@@ -225,9 +244,27 @@
             lblWaiting.Text = "";
             lblWaiting.Visible = false;
             // 
+            // lblPlayersTitle
+            // 
+            lblPlayersTitle.AutoSize = true;
+            lblPlayersTitle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            lblPlayersTitle.Location = new Point(750, 10);
+            lblPlayersTitle.Name = "lblPlayersTitle";
+            lblPlayersTitle.Size = new Size(100, 20);
+            lblPlayersTitle.TabIndex = 12;
+            lblPlayersTitle.Text = "Игроки:";
+            // 
+            // lstPlayers
+            // 
+            lstPlayers.Location = new Point(750, 35);
+            lstPlayers.Name = "lstPlayers";
+            lstPlayers.Size = new Size(320, 200);
+            lstPlayers.TabIndex = 13;
+            // 
             // Form1
             // 
             ClientSize = new Size(1416, 836);
+            Controls.Add(lblTitle);
             Controls.Add(txtNickname);
             Controls.Add(txtEmail);
             Controls.Add(btnConnect);
@@ -237,7 +274,7 @@
             MaximumSize = new Size(1440, 900);
             MinimumSize = new Size(1440, 900);
             Name = "Form1";
-            Text = "Игра - Клиент";
+            Text = "Бойцы хлопковых плантаций 2";
             pnlGame.ResumeLayout(false);
             pnlGame.PerformLayout();
             ResumeLayout(false);

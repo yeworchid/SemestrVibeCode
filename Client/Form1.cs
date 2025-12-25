@@ -19,6 +19,8 @@ namespace Client
         private int defense = 0;
         private int selectedPlace = -1;
         private bool waitingForResponse = false;
+        private List<PlayerInfoDto> playersList = new List<PlayerInfoDto>();
+        private int currentTurnPlayerId = 0;
 
         public Form1()
         {
@@ -309,14 +311,16 @@ namespace Client
                         if (start != null)
                         {
                             myId = start.PlayerId;
-                            Log("Игра началась! Вы игрок " + myId);
+                            Log("⚔️ Битва началась! Вы боец #" + myId);
 
                             if (start.Players != null)
                             {
-                                Log("Игроки:");
+                                playersList = start.Players;
+                                UpdatePlayersList();
+                                Log("Бойцы на плантации:");
                                 foreach (var pl in start.Players)
                                 {
-                                    Log("  " + pl.Id + ": " + pl.Nickname);
+                                    Log("  #" + pl.Id + ": " + pl.Nickname);
                                 }
                             }
 
@@ -331,10 +335,12 @@ namespace Client
                         {
                             currentCycle = turn.Cycle;
                             currentTurn = turn.Turn;
+                            currentTurnPlayerId = turn.PlayerId;
                             myTurn = (turn.PlayerId == myId);
 
                             lblCycle.Text = "Цикл: " + currentCycle;
                             lblTurn.Text = "Ход: " + currentTurn;
+                            UpdatePlayersList();
 
                             if (myTurn)
                             {
@@ -418,7 +424,7 @@ namespace Client
                         var end = MessageDeserializer.Deserialize<GameEndDto>(msg);
                         if (end != null)
                         {
-                            string winMsg = "=== ИГРА ОКОНЧЕНА ===\n\n";
+                            string winMsg = "⚔️ БИТВА НА ПЛАНТАЦИИ ОКОНЧЕНА ⚔️\n\n";
                             winMsg += "Результаты:\n";
 
                             if (end.AllScores != null)
@@ -531,6 +537,21 @@ namespace Client
             else
             {
                 txtLog.AppendText(msg + "\r\n");
+            }
+        }
+
+        private void UpdatePlayersList()
+        {
+            lstPlayers.Items.Clear();
+            foreach (var pl in playersList)
+            {
+                string status = "";
+                if (pl.Id == myId)
+                    status = " (ВЫ)";
+                if (pl.Id == currentTurnPlayerId)
+                    status += " ⚔️ ходит";
+                
+                lstPlayers.Items.Add($"#{pl.Id}: {pl.Nickname}{status}");
             }
         }
     }
