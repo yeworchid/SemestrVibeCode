@@ -441,6 +441,19 @@ namespace Client
                             MessageBox.Show(winMsg, "Конец игры");
                         }
                         break;
+
+                    case MessageType.PLAYER_LEFT:
+                        var left = MessageDeserializer.Deserialize<PlayerLeftDto>(msg);
+                        if (left != null)
+                        {
+                            Log($"{left.Nickname} покинул игру!");
+                            if (left.RemainingPlayers != null)
+                            {
+                                playersList = left.RemainingPlayers;
+                                UpdatePlayersList();
+                            }
+                        }
+                        break;
                 }
             });
         }

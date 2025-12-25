@@ -17,5 +17,6 @@ public enum MessageType : byte
     TURN_ENDED,        // s->c
     STATE,             // s->c
     GAME_END,          // s->c
-    RESPONSE           // s->c
+    RESPONSE,          // s->c
+    PLAYER_LEFT        // s->c (игрок отключился)
 }

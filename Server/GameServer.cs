@@ -46,6 +46,8 @@ public class GameServer
 
     private void HandleClient(TcpClient client)
     {
+        Player? disconnectedPlayer = null;
+        
         try
         {
             var stream = client.GetStream();
@@ -70,8 +72,146 @@ public class GameServer
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Ошибка: " + ex.Message);
+            Console.WriteLine("Ошибка соединения: " + ex.Message);
         }
+        finally
+        {
+            // Игрок отключился
+            disconnectedPlayer = players.Find(x => x.Client == client);
+            if (disconnectedPlayer != null)
+            {
+                HandlePlayerDisconnect(disconnectedPlayer);
+            }
+        }
+    }
+
+    private void HandlePlayerDisconnect(Player p)
+    {
+        Console.WriteLine($"❌ Боец {p.Nickname} (#{p.Id}) покинул плантацию!");
+
+        bool wasCurrentTurn = false;
+        
+        // Проверяем, был ли это ход отключившегося игрока
+        if (gameStarted && turnOrder.Count > 0 && turnIdx < turnOrder.Count)
+        {
+            wasCurrentTurn = turnOrder[turnIdx] == p.Id;
+        }
+
+        // Удаляем игрока из списка
+        players.Remove(p);
+        turnOrder.Remove(p.Id);
+
+        // Если игра ещё не началась или осталось меньше 2 игроков
+        if (!gameStarted || players.Count < 2)
+        {
+            if (players.Count < 2 && gameStarted)
+            {
+                Console.WriteLine("⚠️ Недостаточно игроков для продолжения!");
+                if (players.Count == 1)
+                {
+                    // Единственный оставшийся игрок побеждает
+                    EndGameWithWinner(players[0]);
+                }
+                return;
+            }
+            
+            // Уведомляем оставшихся игроков
+            NotifyPlayerLeft(p);
+            return;
+        }
+
+        // Уведомляем оставшихся игроков
+        NotifyPlayerLeft(p);
+
+        // Если был ход отключившегося игрока - переходим к следующему
+        if (wasCurrentTurn)
+        {
+            Console.WriteLine($"[Сервер] Ход {p.Nickname} прерван, переход к следующему игроку");
+            
+            // Корректируем индекс если нужно
+            if (turnIdx >= turnOrder.Count)
+            {
+                // Начинаем новый цикл
+                cycle++;
+                turnIdx = 0;
+                ShuffleTurnOrder();
+                Console.WriteLine($"=== Начало цикла {cycle} ===");
+
+                if (cycle > totalCycles)
+                {
+                    EndGame();
+                    return;
+                }
+            }
+
+            // Уведомляем о смене хода и начинаем ход следующего игрока
+            if (turnOrder.Count > 0)
+            {
+                var dto = new TurnEndedDto
+                {
+                    PlayerId = p.Id,
+                    NextPlayerId = turnOrder[turnIdx]
+                };
+
+                foreach (var pl in players)
+                {
+                    SendMsg(pl, MessageType.TURN_ENDED, dto);
+                }
+
+                StartPlayerTurn();
+            }
+        }
+    }
+
+    private void NotifyPlayerLeft(Player leftPlayer)
+    {
+        var remainingPlayers = new List<PlayerInfoDto>();
+        foreach (var pl in players)
+        {
+            remainingPlayers.Add(new PlayerInfoDto
+            {
+                Id = pl.Id,
+                Nickname = pl.Nickname,
+                Email = pl.Email
+            });
+        }
+
+        var dto = new PlayerLeftDto
+        {
+            PlayerId = leftPlayer.Id,
+            Nickname = leftPlayer.Nickname,
+            RemainingPlayers = remainingPlayers
+        };
+
+        foreach (var pl in players)
+        {
+            SendMsg(pl, MessageType.PLAYER_LEFT, dto);
+        }
+    }
+
+    private void EndGameWithWinner(Player winner)
+    {
+        int pts = winner.CalcPoints();
+        Console.WriteLine($"🏆 {winner.Nickname} побеждает по умолчанию с {pts} очками!");
+
+        var allScores = new List<PlayerScoreDto>
+        {
+            new PlayerScoreDto
+            {
+                PlayerId = winner.Id,
+                Nickname = winner.Nickname,
+                Points = pts
+            }
+        };
+
+        var dto = new GameEndDto
+        {
+            WinnerPlayerId = winner.Id,
+            Points = pts,
+            AllScores = allScores
+        };
+
+        SendMsg(winner, MessageType.GAME_END, dto);
     }
 
     private void ProcessMessage(TcpClient client, NetworkStream stream, NetworkMessage msg)
