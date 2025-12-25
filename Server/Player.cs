@@ -15,6 +15,7 @@ public class Player
     public Dictionary<string, int> Resources = new Dictionary<string, int>();
     public List<Building> Buildings = new List<Building>();
     public int Soldiers = 0;
+    public int SoldiersCreatedThisTurn = 0;
 
     public void InitResources()
     {
@@ -66,6 +67,19 @@ public class Player
             def = (int)(def * 0.75);
 
         return def;
+    }
+
+    public int GetMaxSoldiersPerTurn()
+    {
+        int max = 0;
+        foreach (var b in Buildings)
+        {
+            if (b.Type == BuildingType.Barracks)
+            {
+                max += GameLogic.GetProduction(BuildingType.Barracks, b.Level);
+            }
+        }
+        return max;
     }
 
     public int CalcPoints()

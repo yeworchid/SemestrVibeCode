@@ -220,6 +220,11 @@ public class GameServer
         var p = players.Find(x => x.Id == pid);
         if (p == null) return;
 
+        // Сброс счётчика солдат за ход
+        p.SoldiersCreatedThisTurn = 0;
+
+        Console.WriteLine($"=== Ход игрока {p.Nickname} (цикл {cycle}, ход {globalTurn}) ===");
+
         DoProduction(p);
         DoProcessing(p);
 
@@ -301,10 +306,13 @@ public class GameServer
 
     private void DoBuild(Player p, BuildRequestDto dto)
     {
+        Console.WriteLine($"[{p.Nickname}] Запрос на постройку {dto.Type} на месте {dto.PlaceId}");
+
         foreach (var b in p.Buildings)
         {
             if (b.PlaceId == dto.PlaceId)
             {
+                Console.WriteLine($"[{p.Nickname}] Отказ: место {dto.PlaceId} занято");
                 SendResponse(p, false, "Место занято");
                 return;
             }
@@ -315,6 +323,7 @@ public class GameServer
         {
             if (!p.HasResource(c.Key, c.Value))
             {
+                Console.WriteLine($"[{p.Nickname}] Отказ: не хватает {c.Key}");
                 SendResponse(p, false, "Не хватает ресурсов");
                 return;
             }
@@ -340,15 +349,19 @@ public class GameServer
             {
                 string res = costList[rnd.Next(costList.Count)];
                 p.AddResource(res, 1);
+                Console.WriteLine($"[{p.Nickname}] Инженер: возврат 1 {res}");
             }
         }
 
+        Console.WriteLine($"[{p.Nickname}] Построено {dto.Type} на месте {dto.PlaceId}");
         SendResponse(p, true, "Построено");
         SendState(p);
     }
 
     private void DoUpgrade(Player p, UpgradeRequestDto dto)
     {
+        Console.WriteLine($"[{p.Nickname}] Запрос на улучшение здания на месте {dto.PlaceId}");
+
         Building? b = null;
         foreach (var bld in p.Buildings)
         {
@@ -361,18 +374,21 @@ public class GameServer
 
         if (b == null)
         {
+            Console.WriteLine($"[{p.Nickname}] Отказ: здание не найдено");
             SendResponse(p, false, "Здание не найдено");
             return;
         }
 
         if (b.TurnBuilt == globalTurn)
         {
+            Console.WriteLine($"[{p.Nickname}] Отказ: нельзя улучшить в тот же ход");
             SendResponse(p, false, "Нельзя улучшить в тот же ход");
             return;
         }
 
         if (b.Level >= 3)
         {
+            Console.WriteLine($"[{p.Nickname}] Отказ: максимальный уровень");
             SendResponse(p, false, "Максимальный уровень");
             return;
         }
@@ -382,6 +398,7 @@ public class GameServer
         {
             if (!p.HasResource(c.Key, c.Value))
             {
+                Console.WriteLine($"[{p.Nickname}] Отказ: не хватает {c.Key}");
                 SendResponse(p, false, "Не хватает ресурсов");
                 return;
             }
@@ -393,32 +410,29 @@ public class GameServer
         b.Level++;
         b.TurnBuilt = globalTurn;
 
+        Console.WriteLine($"[{p.Nickname}] Улучшено {b.Type} до уровня {b.Level}");
         SendResponse(p, true, "Улучшено");
         SendState(p);
     }
 
     private void DoMakeSoldiers(Player p, MakeSoldiersRequestDto dto)
     {
-        Building? barracks = null;
-        foreach (var b in p.Buildings)
-        {
-            if (b.PlaceId == dto.BarracksId && b.Type == BuildingType.Barracks)
-            {
-                barracks = b;
-                break;
-            }
-        }
+        Console.WriteLine($"[{p.Nickname}] Запрос на создание {dto.Count} солдат");
 
-        if (barracks == null)
+        int maxSoldiersPerTurn = p.GetMaxSoldiersPerTurn();
+        int canCreate = maxSoldiersPerTurn - p.SoldiersCreatedThisTurn;
+
+        if (canCreate <= 0)
         {
-            SendResponse(p, false, "Казармы не найдены");
+            Console.WriteLine($"[{p.Nickname}] Отказ: лимит солдат за ход исчерпан ({p.SoldiersCreatedThisTurn}/{maxSoldiersPerTurn})");
+            SendResponse(p, false, "Лимит солдат за ход исчерпан");
             return;
         }
 
-        int maxSoldiers = GameLogic.GetProduction(BuildingType.Barracks, barracks.Level);
-        if (dto.Count > maxSoldiers)
+        if (dto.Count > canCreate)
         {
-            SendResponse(p, false, "Слишком много солдат");
+            Console.WriteLine($"[{p.Nickname}] Отказ: запрошено {dto.Count}, доступно {canCreate}");
+            SendResponse(p, false, $"Можно создать ещё {canCreate} солдат в этот ход");
             return;
         }
 
@@ -427,6 +441,7 @@ public class GameServer
         {
             if (!p.HasResource(c.Key, c.Value * dto.Count))
             {
+                Console.WriteLine($"[{p.Nickname}] Отказ: не хватает ресурсов");
                 SendResponse(p, false, "Не хватает ресурсов");
                 return;
             }
@@ -436,15 +451,20 @@ public class GameServer
             p.RemoveResource(c.Key, c.Value * dto.Count);
 
         p.Soldiers += dto.Count;
+        p.SoldiersCreatedThisTurn += dto.Count;
 
+        Console.WriteLine($"[{p.Nickname}] Создано {dto.Count} солдат (всего: {p.Soldiers}, за ход: {p.SoldiersCreatedThisTurn}/{maxSoldiersPerTurn})");
         SendResponse(p, true, "Солдаты созданы");
         SendState(p);
     }
 
     private void DoAttack(Player p, AttackRequestDto dto)
     {
+        Console.WriteLine($"[{p.Nickname}] Запрос на атаку игрока {dto.ToPlayerId} с {dto.Soldiers} солдатами");
+
         if (cycle <= 5)
         {
+            Console.WriteLine($"[{p.Nickname}] Отказ: атака запрещена первые 5 циклов");
             SendResponse(p, false, "Атака запрещена первые 5 циклов");
             return;
         }
@@ -461,12 +481,14 @@ public class GameServer
 
         if (target == null || target.Id == p.Id)
         {
+            Console.WriteLine($"[{p.Nickname}] Отказ: неверная цель");
             SendResponse(p, false, "Неверная цель");
             return;
         }
 
         if (p.Soldiers < dto.Soldiers)
         {
+            Console.WriteLine($"[{p.Nickname}] Отказ: недостаточно солдат ({p.Soldiers} < {dto.Soldiers})");
             SendResponse(p, false, "Недостаточно солдат");
             return;
         }
@@ -474,6 +496,7 @@ public class GameServer
         p.Soldiers -= dto.Soldiers;
 
         int defense = target.GetDefense();
+        int originalDefense = defense;
         if (p.Archetype == ArchetypeType.Warrior)
             defense = (int)(defense * 0.8);
         else if (p.Archetype == ArchetypeType.Recruit)
@@ -483,6 +506,8 @@ public class GameServer
 
         int lost = (int)Math.Ceiling(dto.Soldiers * (defense / 100.0));
         int survived = dto.Soldiers - lost;
+
+        Console.WriteLine($"[{p.Nickname}] Атака на {target.Nickname}: оборона {originalDefense}% -> {defense}%, потери {lost}, выжило {survived}");
 
         var stolen = new Dictionary<string, int>();
         int stealsPerSoldier = 1;
@@ -514,6 +539,9 @@ public class GameServer
 
         p.Soldiers += survived;
 
+        string stolenStr = string.Join(", ", stolen.Select(x => $"{x.Key}:{x.Value}"));
+        Console.WriteLine($"[{p.Nickname}] Украдено: {stolenStr}");
+
         var attackDto = new AttackTargetDto
         {
             ToPlayerId = dto.ToPlayerId,
@@ -527,6 +555,8 @@ public class GameServer
 
     private void DoEndTurn(Player p)
     {
+        Console.WriteLine($"[{p.Nickname}] Завершает ход");
+
         turnIdx++;
         globalTurn++;
 
@@ -535,6 +565,7 @@ public class GameServer
             cycle++;
             turnIdx = 0;
             ShuffleTurnOrder();
+            Console.WriteLine($"=== Начало цикла {cycle} ===");
 
             if (cycle > totalCycles)
             {

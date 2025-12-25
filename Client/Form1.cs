@@ -158,28 +158,29 @@ namespace Client
                 return;
             }
 
-            BuildingStateDto? barracks = null;
+            // Проверяем есть ли хотя бы одни казармы
+            bool hasBarracks = false;
             foreach (var b in buildings)
             {
                 if (b.Type == BuildingType.Barracks)
                 {
-                    barracks = b;
+                    hasBarracks = true;
                     break;
                 }
             }
 
-            if (barracks == null)
+            if (!hasBarracks)
             {
                 MessageBox.Show("Нет казарм");
                 return;
             }
 
             string input = Microsoft.VisualBasic.Interaction.InputBox("Сколько солдат?", "Создать солдат", "1");
-            if (int.TryParse(input, out int count))
+            if (int.TryParse(input, out int count) && count > 0)
             {
                 var dto = new MakeSoldiersRequestDto
                 {
-                    BarracksId = barracks.PlaceId,
+                    BarracksId = 0, // Не используется, лимит общий
                     Count = count
                 };
                 SendMsgWithWait(MessageType.MAKE_SOLDIERS, dto);
@@ -429,7 +430,8 @@ namespace Client
             lstBuildings.Items.Clear();
             foreach (var b in buildings)
             {
-                lstBuildings.Items.Add("Место " + b.PlaceId + ": " + b.Type + " ур." + b.Level);
+                string name = BuildingNames.GetRussianName(b.Type);
+                lstBuildings.Items.Add("Место " + b.PlaceId + ": " + name + " ур." + b.Level);
             }
 
             gameField.UpdateBuildings(buildings);
